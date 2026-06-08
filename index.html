@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HISYO — あなたの秘書</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cream:   '#FAF8F4',
+          indigo1: '#1E1B4B',
+          indigo2: '#3A3784',
+          gold:    '#E8B04B',
+          ink:     '#2B2724',
+        },
+        fontFamily: {
+          sans:  ['"Zen Maru Gothic"', 'sans-serif'],
+          serif: ['"Noto Serif JP"', 'serif'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color:#FAF8F4; color:#2B2724; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#d8d2c4; border-radius:8px; }
+  .card-shadow { box-shadow:0 4px 20px -8px rgba(30,27,75,0.18); }
+  .fade-out { animation:fadeOut .45s forwards; }
+  @keyframes fadeOut { to { opacity:0; transform:translateX(14px) scale(.97); height:0; margin:0; padding-top:0; padding-bottom:0; overflow:hidden; } }
+  .pop-in { animation:popIn .4s ease; }
+  @keyframes popIn { from { opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
+  .tab-active { background:#1E1B4B; color:#FAF8F4; }
+  .mail-chip-active { background:#1E1B4B; color:#FAF8F4; }
+  .tone-active { background:#3A3784; color:#FAF8F4; border-color:#3A3784; }
+  .mood-active { background:#1E1B4B; color:#FAF8F4; border-color:#1E1B4B; }
+</style>
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- ===== Header ===== -->
+<header class="sticky top-0 z-20 backdrop-blur bg-cream/85 border-b border-indigo1/10">
+  <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-indigo1 flex items-center justify-center relative">
+        <span class="text-gold font-serif text-xl leading-none">神</span>
+        <span class="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full ring-2 ring-cream"></span>
+      </div>
+      <div>
+        <h1 class="font-serif text-indigo1 text-lg leading-tight tracking-wide">HISYO</h1>
+        <p class="text-xs text-ink/50 -mt-0.5">あなたの、もう一人の秘書</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p id="greeting" class="text-sm font-medium text-indigo1"></p>
+      <p id="clock" class="text-xs text-ink/50"></p>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 py-6">
+
+  <!-- ===== Welcome banner (隔週/お帰りなさい) ===== -->
+  <section id="welcomeBack" class="mb-6 rounded-3xl overflow-hidden card-shadow bg-gradient-to-br from-indigo1 to-indigo2 text-cream pop-in">
+    <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-gold/20 flex items-center justify-center text-2xl">🌿</div>
+        <div>
+          <p class="font-serif text-lg">お帰りなさい、かわうちさん！</p>
+          <p class="text-cream/70 text-sm">不在中（5/22〜6/4）にたまったタスクが <span id="backlogCount" class="text-gold font-bold">4</span> 件あります。落ち着いて、一つずつ。</p>
+        </div>
+      </div>
+      <button onclick="showTab('backlog')" class="shrink-0 bg-gold text-indigo1 font-bold text-sm px-5 py-2.5 rounded-full hover:brightness-105 transition">たまりタスクを見る →</button>
+    </div>
+  </section>
+
+  <!-- ===== Tabs ===== -->
+  <nav class="flex gap-2 mb-6 overflow-x-auto pb-1">
+    <button data-tab="today"   onclick="showTab('today')"   class="tab-btn tab-active whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition">📋 今日のダッシュボード</button>
+    <button data-tab="backlog" onclick="showTab('backlog')" class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">🌿 お帰りなさいタスク</button>
+  </nav>
+
+  <!-- ============ TODAY TAB ============ -->
+  <div id="tab-today">
+    <div class="grid lg:grid-cols-3 gap-6">
+
+      <!-- Column 1: 今日のメインタスク -->
+      <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2">
+              <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>今日のメインタスク
+            </h2>
+            <span id="taskCounter" class="text-xs text-ink/50"></span>
+          </div>
+
+          <!-- 体調・気分セレクタ -->
+          <div class="mb-4 p-3.5 rounded-2xl bg-cream border border-indigo1/8">
+            <p class="text-xs text-ink/55 mb-2">今日の体調・気分は？ HISYOが今日の進め方を調整します。</p>
+            <div class="flex flex-wrap gap-1.5">
+              <button data-mood="great"  onclick="setMood('great')"  class="mood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🌟 絶好調</button>
+              <button data-mood="normal" onclick="setMood('normal')" class="mood-btn mood-active text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🙂 ふつう</button>
+              <button data-mood="tired"  onclick="setMood('tired')"  class="mood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">😮‍💨 やや疲れ気味</button>
+              <button data-mood="worn"   onclick="setMood('worn')"   class="mood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🥱 かなり疲れた</button>
+            </div>
+            <p id="moodMsg" class="text-xs text-indigo2 leading-relaxed mt-2.5"></p>
+          </div>
+
+          <ul id="taskList" class="space-y-2.5"></ul>
+          <p id="taskEmpty" class="hidden text-center py-6 text-ink/40 text-sm">🎉 今日のタスクは全部完了！おつかれさまでした。</p>
+
+          <!-- 手入力で追加 -->
+          <div class="mt-4 pt-4 border-t border-indigo1/8 flex flex-col sm:flex-row gap-2">
+            <input id="newTaskInput" type="text" placeholder="タスクを入力して追加…"
+              onkeydown="if(event.key==='Enter') addTaskFromInput()"
+              class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition placeholder:text-ink/35">
+            <select id="newTaskPrio" class="text-sm px-3 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold text-ink">
+              <option value="3">🔴 最優先</option>
+              <option value="2" selected>🟡 優先</option>
+              <option value="1">⚪ 通常</option>
+            </select>
+            <button onclick="addTaskFromInput()" class="shrink-0 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">＋ 追加</button>
+          </div>
+        </div>
+
+        <!-- メール管理 -->
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2">
+              <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>メール管理（秘書の仕分け）
+            </h2>
+            <span id="mailCounter" class="text-xs text-ink/50"></span>
+          </div>
+          <p class="text-xs text-ink/45 mb-4">HISYOが重要度と急ぎ度を読み取り、自動で振り分けます。要約つきで中身がひと目で。</p>
+
+          <!-- フィルタチップ -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button data-filter="all"   onclick="filterMail('all')"   class="mail-chip mail-chip-active text-xs font-medium px-3.5 py-1.5 rounded-full border border-indigo1/15 transition">すべて</button>
+            <button data-filter="reply" onclick="filterMail('reply')" class="mail-chip bg-white text-xs font-medium px-3.5 py-1.5 rounded-full border border-indigo1/15 transition">🔴 優先返信 <span id="cnt-reply" class="opacity-60"></span></button>
+            <button data-filter="check" onclick="filterMail('check')" class="mail-chip bg-white text-xs font-medium px-3.5 py-1.5 rounded-full border border-indigo1/15 transition">🟡 要確認 <span id="cnt-check" class="opacity-60"></span></button>
+            <button data-filter="junk"  onclick="filterMail('junk')"  class="mail-chip bg-white text-xs font-medium px-3.5 py-1.5 rounded-full border border-indigo1/15 transition">⚪ 不要 <span id="cnt-junk" class="opacity-60"></span></button>
+          </div>
+
+          <ul id="mailList" class="space-y-2.5"></ul>
+          <p id="mailEmpty" class="hidden text-center py-8 text-ink/40 text-sm">📭 表示するメールはありません。</p>
+
+          <!-- 不要メール一括削除 -->
+          <div id="junkBar" class="hidden mt-4 flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-cream border border-indigo1/8">
+            <p class="text-xs text-ink/60"><span id="junkBarCount" class="font-bold text-ink">0</span> 件の不要メール（メルマガ・広告など）</p>
+            <button onclick="deleteJunk()" class="shrink-0 bg-indigo1 text-cream text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo2 transition">🗑 一括で削除</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 2: 外部連携通知 -->
+      <section class="space-y-6">
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2">
+              <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>外部連携の通知
+            </h2>
+            <span id="notifDot" class="text-xs text-ink/50"></span>
+          </div>
+          <div id="notifList" class="space-y-3"></div>
+          <p id="notifEmpty" class="hidden text-center py-8 text-ink/40 text-sm">✨ 未確認の通知はありません。</p>
+        </div>
+
+        <!-- ミニカレンダー風 今週の予定 -->
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-4">
+            <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>今週の入札カレンダー
+          </h2>
+          <div class="grid grid-cols-5 gap-1.5 text-center text-xs">
+            <div class="py-2 rounded-xl bg-cream text-ink/50">月</div>
+            <div class="py-2 rounded-xl bg-gold/20 text-indigo1 font-bold ring-1 ring-gold">火<br><span class="text-[10px]">入札</span></div>
+            <div class="py-2 rounded-xl bg-cream text-ink/50">水</div>
+            <div class="py-2 rounded-xl bg-gold/20 text-indigo1 font-bold ring-1 ring-gold">木<br><span class="text-[10px]">入札</span></div>
+            <div class="py-2 rounded-xl bg-cream text-ink/50">金</div>
+          </div>
+          <p class="text-xs text-ink/45 mt-3 leading-relaxed">火・木は入札案件の確認日です。HISYOが自動でタスクに追加しています。</p>
+        </div>
+
+        <!-- よく見るサイト -->
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+            <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>よく見るサイト
+          </h2>
+          <p class="text-xs text-ink/45 mb-3">毎日チェックするページを登録。クリックで開きます。</p>
+          <div id="siteList" class="grid grid-cols-2 gap-2"></div>
+          <div class="mt-3 pt-3 border-t border-indigo1/8 flex flex-col gap-2">
+            <input id="siteName" type="text" placeholder="サイト名（例：入札情報）" class="text-xs px-3 py-2 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+            <div class="flex gap-2">
+              <input id="siteUrl" type="text" placeholder="https://…" class="flex-1 text-xs px-3 py-2 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+              <button onclick="addSite()" class="shrink-0 bg-indigo1 text-cream text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo2 transition">＋ 登録</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 予定調整 -->
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2">
+              <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>予定調整
+            </h2>
+            <span id="coordCounter" class="text-xs text-ink/50"></span>
+          </div>
+          <p class="text-xs text-ink/45 mb-3">候補日を選んで日程を確定。確定するとタスクにも追加できます。</p>
+          <div id="coordList" class="space-y-3"></div>
+          <div class="mt-3 pt-3 border-t border-indigo1/8 flex gap-2">
+            <input id="coordTitle" type="text" placeholder="調整したい予定（例：□□社と打合せ）" class="flex-1 text-xs px-3 py-2 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+            <button onclick="addCoord()" class="shrink-0 bg-indigo1 text-cream text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo2 transition">＋ 調整</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ============ BACKLOG TAB ============ -->
+  <div id="tab-backlog" class="hidden">
+    <section class="bg-white rounded-3xl card-shadow p-6 max-w-3xl mx-auto">
+      <div class="flex items-center gap-3 mb-1">
+        <div class="w-10 h-10 rounded-2xl bg-indigo1/8 flex items-center justify-center text-xl">🌿</div>
+        <div>
+          <h2 class="font-serif text-indigo1 text-lg">不在中のたまりタスク</h2>
+          <p class="text-xs text-ink/50">5/22〜6/4 のあいだに発生したもの</p>
+        </div>
+      </div>
+      <div class="h-px bg-indigo1/8 my-4"></div>
+      <ul id="backlogList" class="space-y-2.5"></ul>
+      <p id="backlogEmpty" class="hidden text-center py-10 text-ink/40 text-sm">🎉 たまりタスクはすべて片付きました。完璧です！</p>
+    </section>
+  </div>
+
+</main>
+
+<footer class="max-w-6xl mx-auto px-5 py-8 text-center">
+  <p class="text-xs text-ink/35">HISYO プロトタイプ（ステップ1：理想の画面）— このモックではデータは保存されません</p>
+</footer>
+
+<!-- ===== メール本文モーダル ===== -->
+<div id="mailModal" class="hidden fixed inset-0 z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div onclick="closeMail()" class="absolute inset-0 bg-indigo1/40 backdrop-blur-sm"></div>
+  <div class="relative bg-cream w-full sm:max-w-xl max-h-[88vh] rounded-t-3xl sm:rounded-3xl card-shadow flex flex-col pop-in overflow-hidden">
+    <!-- ヘッダー -->
+    <div class="px-6 pt-5 pb-4 border-b border-indigo1/8">
+      <div class="flex items-start justify-between gap-3">
+        <div id="mailModalBadges" class="flex items-center gap-1.5 flex-wrap"></div>
+        <button onclick="closeMail()" class="shrink-0 w-8 h-8 rounded-full hover:bg-indigo1/8 flex items-center justify-center text-ink/50 transition" title="閉じる">✕</button>
+      </div>
+      <h3 id="mailModalSubject" class="font-serif text-indigo1 text-lg mt-2 leading-snug"></h3>
+      <div class="flex items-center justify-between mt-1">
+        <p id="mailModalFrom" class="text-xs text-ink/55"></p>
+        <p id="mailModalTime" class="text-xs text-ink/40"></p>
+      </div>
+    </div>
+    <!-- HISYOの要約 -->
+    <div class="px-6 py-3 bg-gold/10 border-b border-gold/20">
+      <p class="text-[11px] font-bold text-indigo2 mb-0.5">📝 HISYOの要約</p>
+      <p id="mailModalSummary" class="text-xs text-ink/70 leading-relaxed"></p>
+    </div>
+    <!-- 本文 -->
+    <div class="px-6 py-5 overflow-y-auto flex-1">
+
+      <!-- 返事の前に確認すること -->
+      <div id="mailModalChecksWrap" class="hidden mb-5 rounded-2xl bg-indigo1/5 border border-indigo1/10 p-4">
+        <p class="text-[11px] font-bold text-indigo2 mb-2">✅ 返事の前に確認すること</p>
+        <ul id="mailModalChecks" class="space-y-2"></ul>
+      </div>
+
+      <p id="mailModalBody" class="text-sm text-ink/80 leading-relaxed whitespace-pre-wrap"></p>
+
+      <!-- 添付ファイル -->
+      <div id="mailModalAttachWrap" class="hidden mt-5 pt-4 border-t border-indigo1/8">
+        <p class="text-[11px] font-bold text-ink/55 mb-2">📎 添付ファイル</p>
+        <div id="mailModalAttach" class="flex flex-wrap gap-2"></div>
+        <!-- プレビュー -->
+        <div id="attachPreview" class="hidden mt-3 rounded-2xl border border-indigo1/10 bg-white overflow-hidden">
+          <div class="flex items-center justify-between px-3 py-2 bg-indigo1/5 border-b border-indigo1/8">
+            <p id="attachPreviewName" class="text-xs font-medium text-ink/70 truncate"></p>
+            <button onclick="closePreview()" class="text-xs text-ink/40 hover:text-ink/70">閉じる ✕</button>
+          </div>
+          <div id="attachPreviewBody" class="p-6 flex flex-col items-center justify-center text-center min-h-[140px]"></div>
+        </div>
+      </div>
+
+      <!-- HISYO返信下書き -->
+      <div id="mailModalDraft" class="hidden mt-5 pt-4 border-t border-indigo1/8">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[11px] font-bold text-indigo2">✍️ HISYOが作成した返信の下書き</p>
+          <button onclick="copyDraft()" class="text-[11px] font-medium text-indigo2 hover:text-gold transition">📋 コピー</button>
+        </div>
+        <!-- トーン切替 -->
+        <div class="flex items-center gap-1.5 mb-2">
+          <span class="text-[10px] text-ink/45 mr-1">トーン：</span>
+          <button data-tone="polite" onclick="setTone('polite')" class="tone-btn tone-active text-[11px] font-medium px-3 py-1 rounded-full border border-indigo1/15 transition">丁寧</button>
+          <button data-tone="casual" onclick="setTone('casual')" class="tone-btn bg-white text-[11px] font-medium px-3 py-1 rounded-full border border-indigo1/15 transition">カジュアル</button>
+          <button data-tone="brief"  onclick="setTone('brief')"  class="tone-btn bg-white text-[11px] font-medium px-3 py-1 rounded-full border border-indigo1/15 transition">簡潔</button>
+        </div>
+        <textarea id="mailModalDraftText" rows="9" class="w-full text-xs text-ink/80 leading-relaxed p-3 rounded-2xl bg-white border border-indigo1/10 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition resize-y"></textarea>
+        <p class="text-[10px] text-ink/40 mt-1">※ 下書きです。内容を確認・修正のうえご利用ください。</p>
+      </div>
+    </div>
+    <!-- フッター操作 -->
+    <div id="mailModalActions" class="px-6 py-4 border-t border-indigo1/8 flex flex-wrap gap-2 justify-end"></div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 transition-all duration-300 bg-indigo1 text-cream text-sm px-5 py-3 rounded-full card-shadow z-50"></div>
+
+<script>
+/* ---------- データ ---------- */
+let taskSeq = 100;
+const tasks = [
+  { id:'t2', prio:3, icon:'💧', title:'水道申請の納付書を発行', sub:'○○様邸・本日発行予定' },
+  { id:'t1', prio:2, icon:'🏛️', title:'入札案件の確認（火曜の自動タスク）', sub:'本日分の公告をチェック・締切を整理' },
+  { id:'t3', prio:2, icon:'✉️', title:'契約更新メールを送付', sub:'△△商事・更新案内のリマインド' },
+  { id:'t4', prio:1, icon:'📑', title:'木曜入札の事前資料を準備', sub:'明後日に向けて様式を揃える' },
+];
+/* 優先度メタ：3=最優先 / 2=優先 / 1=通常 */
+const PRIO = {
+  3:{ label:'最優先', badge:'bg-red-100 text-red-600',  dot:'🔴', border:'border-l-red-400' },
+  2:{ label:'優先',   badge:'bg-gold/20 text-indigo2',  dot:'🟡', border:'border-l-gold' },
+  1:{ label:'通常',   badge:'bg-indigo1/8 text-ink/55', dot:'⚪', border:'border-l-indigo1/15' },
+};
+/* 体調・気分：minPrio未満のタスクは「余裕があれば」に畳む */
+let mood = 'normal';
+let hiddenOpen = false;
+const MOOD = {
+  great:  { minPrio:1, msg:'🌟 今日は絶好調！勢いに乗って、どんどん片付けていきましょう。' },
+  normal: { minPrio:1, msg:'🙂 いつものペースで。一つずつ進めていけば大丈夫です。' },
+  tired:  { minPrio:2, msg:'😮‍💨 無理は禁物。まずは優先度の高いものから。通常タスクは「余裕があれば」に畳んでおきました。' },
+  worn:   { minPrio:3, msg:'🥱 今日は最優先のものだけで十分です。残りは明日のあなたに任せて、早めに切り上げましょう。' },
+};
+
+let notifs = [
+  { id:'n1', icon:'📠', from:'共有フォルダ', title:'新しいFAXが届きました', sub:'「御見積依頼_山田工務店.pdf」が保存されました', time:'10分前', accent:'border-l-gold', judge:[{t:'急ぎ',c:'bg-red-100 text-red-600'},{t:'重要',c:'bg-gold/20 text-indigo2'}] },
+  { id:'n2', icon:'💬', from:'LINE', title:'発注書の保存リマインダー', sub:'トーク内の発注書PDFをまだ保存していません', time:'32分前', accent:'border-l-green-400', judge:[{t:'急ぎでない',c:'bg-indigo1/8 text-ink/55'}] },
+  { id:'n3', icon:'📞', from:'アイブリー（AI電話）', title:'工事依頼の着信を取次ぎました', sub:'「水漏れの修理を依頼したい」と要件あり・折返し希望', time:'1時間前', accent:'border-l-indigo2', judge:[{t:'急ぎ',c:'bg-red-100 text-red-600'},{t:'重要',c:'bg-gold/20 text-indigo2'}] },
+  { id:'n4', icon:'👥', from:'Teams', title:'直通メッセージ', sub:'社長より：明日の打合せ資料を確認しておいて', time:'2時間前', accent:'border-l-blue-400', judge:[{t:'重要',c:'bg-gold/20 text-indigo2'}] },
+];
+
+const backlog = [
+  { id:'b1', icon:'📠', title:'不在中に届いたFAX 6件の仕分け', sub:'5/23・5/27・6/2 ほか' },
+  { id:'b2', icon:'💧', title:'水道申請の納付書 2件の発行漏れ確認', sub:'期限が近いものから優先' },
+  { id:'b3', icon:'✉️', title:'未返信メール 11件の確認', sub:'更新案内・見積依頼を含む' },
+  { id:'b4', icon:'🏛️', title:'不在中の入札公告 3件の確認', sub:'締切が過ぎていないかチェック' },
+];
+
+/* メール：HISYOが「優先返信(reply)／要確認(check)／不要(junk)」に自動仕分け */
+let mails = [
+  { id:'m1', cat:'reply', read:false, from:'△△市役所 水道局', addr:'suido@city.example.lg.jp', time:'本日 9:12', subject:'【要対応】給水装置工事の申請書類の不備について', summary:'提出書類のうち、配管図の押印が漏れているため再提出が必要。期限は6/9（火）まで。', deadline:'6/9 まで', flags:['申請依頼','見逃し注意'],
+    attachments:[{name:'配管図_様式第3号.pdf', type:'pdf'},{name:'不備箇所の写真.jpg', type:'img'}],
+    checks:[{text:'配管図に押す印は社印か担当者印か総務に確認', ask:'総務'},{text:'再提出前に原本の控えをコピー', ask:null}],
+    body:' NS商事 ご担当者さま\n\nいつもお世話になっております。△△市役所 水道局です。\n\n先日ご提出いただきました給水装置工事の申請書類につきまして、配管図（様式第3号）への押印が漏れておりました。お手数ですが、押印のうえ再提出をお願いいたします。\n\n■提出期限：6月9日（火）17:00まで\n■提出方法：窓口またはメール添付\n\n期限を過ぎますと次回の審査回しとなりますのでご注意ください。\nご不明点はお気軽にお問い合わせください。\n\n△△市役所 水道局 給水課' },
+  { id:'m2', cat:'reply', read:false, from:'○○建設 工事課', addr:'koji@maru-const.example.com', time:'本日 8:40', subject:'下水道接続申請の依頼（至急）', summary:'新築現場の下水接続申請を代行してほしいとの依頼。必要書類のリスト添付あり。折返し希望。', deadline:'本日中に返信', flags:['申請依頼','要返信'],
+    attachments:[{name:'必要書類リスト.xlsx', type:'xlsx'},{name:'現場案内図.pdf', type:'pdf'}],
+    checks:[{text:'代行を引き受けてよいか社長に確認', ask:'社長'},{text:'着工スケジュールと納期を工事部に確認', ask:'工事部'}],
+    body:'お世話になっております。○○建設 工事課の佐藤です。\n\n新築現場（××町2-15）の下水道接続申請につきまして、貴社に代行をお願いしたくご連絡しました。\n\n着工予定が迫っており、できれば今週中に申請を出したく存じます。必要書類のリストを添付しておりますので、ご確認のうえ、対応可否を本日中にご返信いただけますと幸いです。\n\nお手数おかけしますが、よろしくお願いいたします。\n\n○○建設 工事課 佐藤' },
+  { id:'m3', cat:'check', read:false, from:'□□県 入札管理課', addr:'nyusatsu@pref.example.lg.jp', time:'昨日 16:05', subject:'落札結果のご通知（案件No.2026-114）', summary:'先日応札した道路補修工事が落札。契約締結に向け、契約書類の準備と日程調整の連絡待ち。', deadline:null, flags:['落札案件','重要'],
+    attachments:[{name:'落札通知書.pdf', type:'pdf'}],
+    checks:[{text:'契約締結に動ける日程を工事部に確認', ask:'工事部'},{text:'契約書類（印鑑証明など）の準備状況を経理に確認', ask:'経理'}],
+    body:'NS商事 御中\n\n標記案件（No.2026-114「市道○○線 道路補修工事」）につきまして、貴社が落札されましたことをご通知いたします。\n\nつきましては、契約締結の手続きに入らせていただきます。後日、契約書類および日程調整のご連絡を差し上げますので、ご準備のほどよろしくお願いいたします。\n\n□□県 土木部 入札管理課' },
+  { id:'m4', cat:'check', read:false, from:'山田工務店', addr:'yamada@yamada-koumuten.example.com', time:'昨日 14:22', subject:'御見積の件、ご確認ください', summary:'FAXで届いた見積依頼のメール版。数量に変更ありとのことで、内容のすり合わせが必要。', deadline:null, flags:['要確認'],
+    attachments:[{name:'見積依頼_変更後.pdf', type:'pdf'}],
+    checks:[{text:'変更後の数量と単価を担当者に確認', ask:'担当者'}],
+    body:'いつもお世話になっております。山田工務店です。\n\n先ほどFAXでもお送りしましたが、念のためメールでもご連絡いたします。先日の御見積につきまして、数量に一部変更が生じております。\n\nお手数ですが、変更後の数量で再度お見積りをお願いできますでしょうか。詳細は添付をご覧ください。\n\n山田工務店 山田' },
+  { id:'m5', cat:'junk', read:false, from:'ビジネス情報マガジン', addr:'news@bizmaga.example.com', time:'本日 7:00', subject:'【PR】今なら半額！オフィス用品セールのご案内', summary:'広告メール。対応不要。', deadline:null, flags:['広告'], attachments:[],
+    body:'＼ 期間限定セール開催中 ／\n人気のオフィス用品が今なら最大50%OFF！\n\n※本メールは配信を希望された方にお送りしています。\n配信停止はこちら。' },
+  { id:'m6', cat:'junk', read:false, from:'セミナー事務局', addr:'info@seminar.example.com', time:'昨日 18:30', subject:'参加者募集中｜無料ウェビナーのお知らせ', summary:'メルマガ。対応不要。', deadline:null, flags:['メルマガ'], attachments:[],
+    body:'無料ウェビナー「これからの業務効率化」参加者募集中！\nお申込みは下記リンクから。\n\n配信解除をご希望の方はこちら。' },
+  { id:'m7', cat:'junk', read:false, from:'no-reply＠通販サイト', addr:'no-reply@shop.example.com', time:'昨日 12:00', subject:'ポイント有効期限のお知らせ', summary:'自動配信の販促メール。対応不要。', deadline:null, flags:['販促'], attachments:[],
+    body:'お客様の保有ポイントの一部が今月末で失効します。\nこの機会にぜひご利用ください。\n\n※本メールは自動配信です。' },
+];
+let mailFilter = 'all';
+let currentMailId = null;
+let currentTone = 'polite';
+const CAT = {
+  reply:{ label:'優先返信', badge:'bg-red-100 text-red-600',  dot:'🔴', border:'border-l-red-400' },
+  check:{ label:'要確認',   badge:'bg-gold/20 text-indigo2',  dot:'🟡', border:'border-l-gold' },
+  junk: {  label:'不要',     badge:'bg-indigo1/8 text-ink/50', dot:'⚪', border:'border-l-ink/20' },
+};
+
+/* ---------- 描画 ---------- */
+const el = id => document.getElementById(id);
+
+function taskRow(t){
+  const p = PRIO[t.prio] || PRIO[1];
+  return `<li id="${t.id}" class="pop-in flex items-center gap-3 p-3.5 rounded-2xl bg-cream border border-indigo1/8 border-l-4 ${p.border} hover:border-gold/50 transition group">
+    <button onclick="completeTask('${t.id}')" class="shrink-0 w-6 h-6 rounded-lg border-2 border-indigo1/25 group-hover:border-gold flex items-center justify-center transition" title="完了にする">
+      <span class="opacity-0 group-hover:opacity-40 text-gold text-sm">✓</span>
+    </button>
+    <span class="text-xl">${t.icon}</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-medium text-ink truncate">${t.title}</p>
+      <p class="text-xs text-ink/50 truncate">${t.sub||''}</p>
+    </div>
+    <span class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full ${p.badge}">${p.dot} ${p.label}</span>
+  </li>`;
+}
+function renderTasks(){
+  // 重要度順（最優先→通常）に並び替え
+  tasks.sort((a,b)=>(b.prio||1)-(a.prio||1));
+  const minP = (MOOD[mood]||MOOD.normal).minPrio;
+  const visible = tasks.filter(t=>(t.prio||1)>=minP);
+  const hidden  = tasks.filter(t=>(t.prio||1)<minP);
+  let html = visible.map(taskRow).join('');
+  if(hidden.length){
+    html += `<li class="list-none">
+      <button onclick="toggleHidden()" class="w-full text-left text-xs text-ink/50 hover:text-indigo2 py-2 transition">💤 余裕があれば（${hidden.length}件）｜${hiddenOpen?'隠す ▴':'表示する ▾'}</button>
+      <ul class="${hiddenOpen?'':'hidden'} space-y-2.5 mt-1">${hidden.map(taskRow).join('')}</ul>
+    </li>`;
+  }
+  el('taskList').innerHTML = html;
+  // 気分メッセージ
+  el('moodMsg').textContent = (MOOD[mood]||MOOD.normal).msg;
+  updateTaskCounter();
+}
+function setMood(k){
+  mood = k;
+  hiddenOpen = false;
+  document.querySelectorAll('.mood-btn').forEach(b=>{
+    const active = b.dataset.mood===k;
+    b.classList.toggle('mood-active', active);
+    b.classList.toggle('bg-white', !active);
+  });
+  renderTasks();
+}
+function toggleHidden(){ hiddenOpen = !hiddenOpen; renderTasks(); }
+function addTask({icon='📝', title, sub='', prio=2}){
+  if(!title || !title.trim()) return;
+  tasks.push({ id:'t'+(taskSeq++), prio, icon, title:title.trim(), sub });
+  renderTasks();
+}
+function addTaskFromInput(){
+  const input = el('newTaskInput');
+  const val = input.value.trim();
+  if(!val){ input.focus(); return; }
+  const prio = parseInt(el('newTaskPrio').value, 10) || 2;
+  addTask({ icon:'📝', title:val, sub:'手入力で追加', prio });
+  input.value = '';
+  input.focus();
+  toast('メインタスクに追加しました ✓');
+}
+function updateTaskCounter(){
+  const n = tasks.length;
+  el('taskCounter').textContent = n>0 ? `残り ${n} 件` : '';
+  el('taskEmpty').classList.toggle('hidden', n>0);
+}
+function completeTask(id){
+  const node = el(id);
+  node.classList.add('fade-out');
+  setTimeout(()=>{
+    const i = tasks.findIndex(t=>t.id===id);
+    if(i>-1) tasks.splice(i,1);
+    node.remove();
+    updateTaskCounter();
+    toast('タスクを完了しました ✓');
+  },420);
+}
+
+function notifRow(n){
+  return `<div id="${n.id}" class="pop-in border-l-4 ${n.accent} bg-cream rounded-r-2xl p-3.5 flex gap-3">
+    <span class="text-xl shrink-0">${n.icon}</span>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <p class="text-xs font-bold text-indigo2">${n.from}</p>
+        <p class="text-[10px] text-ink/40">${n.time}</p>
+      </div>
+      <p class="text-sm font-medium text-ink leading-snug">${n.title}</p>
+      <p class="text-xs text-ink/55 leading-snug">${n.sub}</p>
+      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+        ${(n.judge||[]).map(j=>`<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${j.c}">HISYO判定：${j.t}</span>`).join('')}
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <button onclick="moveNotifToTask('${n.id}')" class="text-[11px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2.5 py-1 rounded-full transition">📌 メインへ</button>
+        <button onclick="dismissNotif('${n.id}')" class="text-[11px] text-indigo2 hover:text-gold font-medium transition">確認した →</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderNotifs(){
+  el('notifList').innerHTML = notifs.map(notifRow).join('');
+  updateNotifCounter();
+}
+function updateNotifCounter(){
+  const n = notifs.length;
+  el('notifDot').textContent = n>0 ? `未確認 ${n}` : '';
+  el('notifEmpty').classList.toggle('hidden', n>0);
+}
+function dismissNotif(id){
+  const node = el(id);
+  node.classList.add('fade-out');
+  setTimeout(()=>{
+    const i = notifs.findIndex(n=>n.id===id);
+    if(i>-1) notifs.splice(i,1);
+    node.remove();
+    updateNotifCounter();
+  },420);
+}
+
+function moveNotifToTask(id){
+  const n = notifs.find(x=>x.id===id);
+  if(!n) return;
+  const labels = (n.judge||[]).map(j=>j.t);
+  // 急ぎ＋重要→最優先 / 重要or急ぎ→優先 / それ以外→通常
+  let prio = 1;
+  if(labels.includes('急ぎ') && labels.includes('重要')) prio = 3;
+  else if(labels.includes('重要') || labels.includes('急ぎ')) prio = 2;
+  addTask({ icon:n.icon, title:n.title, sub:`${n.from}｜${n.sub}`, prio });
+  const node = el(id);
+  if(node){ node.classList.add('fade-out'); setTimeout(()=>{ notifs = notifs.filter(x=>x.id!==id); renderNotifs(); },420); }
+  else { notifs = notifs.filter(x=>x.id!==id); renderNotifs(); }
+  toast('メインタスクに移動しました 📌');
+}
+function backlogRow(b){
+  return `<li id="${b.id}" class="pop-in flex items-center gap-3 p-3.5 rounded-2xl bg-cream border border-indigo1/8 hover:border-gold/50 transition group">
+    <button onclick="completeBacklog('${b.id}')" class="shrink-0 w-6 h-6 rounded-lg border-2 border-indigo1/25 group-hover:border-gold flex items-center justify-center transition" title="片付けた">
+      <span class="opacity-0 group-hover:opacity-40 text-gold text-sm">✓</span>
+    </button>
+    <span class="text-xl">${b.icon}</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-medium text-ink">${b.title}</p>
+      <p class="text-xs text-ink/50">${b.sub}</p>
+    </div>
+  </li>`;
+}
+function renderBacklog(){
+  el('backlogList').innerHTML = backlog.map(backlogRow).join('');
+  updateBacklog();
+}
+function updateBacklog(){
+  const n = backlog.length;
+  el('backlogCount').textContent = n;
+  el('backlogEmpty').classList.toggle('hidden', n>0);
+}
+function completeBacklog(id){
+  const node = el(id);
+  node.classList.add('fade-out');
+  setTimeout(()=>{
+    const i = backlog.findIndex(b=>b.id===id);
+    if(i>-1) backlog.splice(i,1);
+    node.remove();
+    updateBacklog();
+    toast('たまりタスクを片付けました 🌿');
+  },420);
+}
+
+/* ---------- メール ---------- */
+function mailRow(m){
+  const c = CAT[m.cat];
+  const flags = (m.flags||[]).map(f=>`<span class="text-[10px] px-2 py-0.5 rounded-full bg-cream border border-indigo1/10 text-ink/55">${f}</span>`).join('');
+  const deadline = m.deadline ? `<span class="text-[11px] font-bold text-red-600">⏰ ${m.deadline}</span>` : '';
+  const moveBtn = m.cat==='junk' ? '' :
+    `<button onclick="event.stopPropagation(); moveMailToTask('${m.id}')" class="text-[11px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2.5 py-1 rounded-full transition">📌 メインへ</button>`;
+  const action = m.cat==='junk'
+    ? `<button onclick="event.stopPropagation(); deleteMail('${m.id}')" class="text-[11px] text-ink/45 hover:text-red-500 font-medium transition">🗑 削除</button>`
+    : `<button onclick="event.stopPropagation(); deleteMail('${m.id}')" class="text-[11px] text-indigo2 hover:text-gold font-medium transition">対応済み →</button>`;
+  const unread = !m.read;
+  const dim = m.read ? 'opacity-60' : '';
+  const dot = unread ? '<span class="shrink-0 w-2 h-2 rounded-full bg-gold" title="未読"></span>' : '';
+  const clip = (m.attachments&&m.attachments.length) ? `<span class="text-[11px] text-ink/40">📎${m.attachments.length}</span>` : '';
+  const needAsk = (m.checks||[]).some(c=>c.ask);
+  const askChip = needAsk ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo1/8 text-indigo2">🧐 要・社内確認</span>' : '';
+  return `<li id="${m.id}" onclick="openMail('${m.id}')" class="pop-in cursor-pointer border-l-4 ${c.border} bg-cream rounded-r-2xl p-3.5 hover:bg-indigo1/[0.03] hover:shadow-sm transition ${dim}">
+    <div class="flex items-center gap-2 mb-1 flex-wrap">
+      ${dot}
+      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${c.dot} ${c.label}</span>
+      ${askChip}
+      ${flags}
+      <span class="ml-auto flex items-center gap-1.5 text-[11px] text-ink/45">${clip}${m.from}</span>
+    </div>
+    <p class="text-sm ${unread?'font-bold':'font-medium'} text-ink leading-snug">${m.subject}</p>
+    <p class="text-xs text-ink/55 leading-relaxed mt-1">📝 ${m.summary}</p>
+    <div class="flex items-center justify-between mt-2 gap-2">
+      ${deadline || '<span class="text-[11px] text-ink/35">クリックで本文を開く</span>'}
+      <div class="flex items-center gap-2">${moveBtn}${action}</div>
+    </div>
+  </li>`;
+}
+function renderMail(){
+  const list = mails.filter(m => mailFilter==='all' || m.cat===mailFilter);
+  el('mailList').innerHTML = list.map(mailRow).join('');
+  el('mailEmpty').classList.toggle('hidden', list.length>0);
+  // カウント更新
+  ['reply','check','junk'].forEach(cat=>{
+    const n = mails.filter(m=>m.cat===cat).length;
+    el('cnt-'+cat).textContent = n? `(${n})` : '';
+  });
+  const unreadN = mails.filter(m=>!m.read).length;
+  el('mailCounter').textContent = mails.length>0 ? `全 ${mails.length} 件・未読 ${unreadN}` : '';
+  // 不要メール一括バー
+  const junkN = mails.filter(m=>m.cat==='junk').length;
+  const showBar = junkN>0 && (mailFilter==='all' || mailFilter==='junk');
+  el('junkBar').classList.toggle('hidden', !showBar);
+  el('junkBarCount').textContent = junkN;
+}
+function filterMail(f){
+  mailFilter = f;
+  document.querySelectorAll('.mail-chip').forEach(b=>{
+    const active = b.dataset.filter===f;
+    b.classList.toggle('mail-chip-active', active);
+    b.classList.toggle('bg-white', !active);
+  });
+  renderMail();
+}
+function deleteMail(id){
+  const node = el(id);
+  if(!node){ mails = mails.filter(m=>m.id!==id); renderMail(); return; }
+  node.classList.add('fade-out');
+  setTimeout(()=>{ mails = mails.filter(m=>m.id!==id); renderMail(); },420);
+}
+function moveMailToTask(id){
+  const m = mails.find(x=>x.id===id);
+  if(!m) return;
+  const prio = m.cat==='reply' ? 3 : 2;   // 優先返信→最優先 / 要確認→優先
+  addTask({ icon:'✉️', title:m.subject, sub:`${m.from}｜${m.summary}`, prio });
+  const node = el(id);
+  if(node){ node.classList.add('fade-out'); setTimeout(()=>{ mails = mails.filter(x=>x.id!==id); renderMail(); },420); }
+  else { mails = mails.filter(x=>x.id!==id); renderMail(); }
+  toast('メインタスクに移動しました 📌');
+}
+function openMail(id){
+  const m = mails.find(x=>x.id===id);
+  if(!m) return;
+  currentMailId = id;
+  const c = CAT[m.cat];
+  const badges = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${c.dot} ${c.label}</span>` +
+    (m.flags||[]).map(f=>`<span class="text-[10px] px-2 py-0.5 rounded-full bg-white border border-indigo1/10 text-ink/55">${f}</span>`).join('') +
+    (m.deadline?`<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">⏰ ${m.deadline}</span>`:'');
+  el('mailModalBadges').innerHTML = badges;
+  el('mailModalSubject').textContent = m.subject;
+  el('mailModalFrom').textContent = `差出人：${m.from}　<${m.addr||''}>`;
+  el('mailModalTime').textContent = m.time||'';
+  el('mailModalSummary').textContent = m.summary;
+  el('mailModalBody').textContent = m.body || m.summary;
+
+  // 返事の前に確認すること
+  const checks = m.checks || [];
+  el('mailModalChecksWrap').classList.toggle('hidden', checks.length===0);
+  el('mailModalChecks').innerHTML = checks.map((ch,i)=>{
+    const askChip = ch.ask
+      ? `<span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-indigo2">🧐 ${ch.ask}に聞く</span>`
+      : `<span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white border border-indigo1/10 text-ink/50">自分で確認</span>`;
+    const taskBtn = ch.ask
+      ? `<button onclick="addCheckTask('${m.id}',${i})" class="shrink-0 text-[10px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2 py-0.5 rounded-full transition">📌 確認タスク化</button>`
+      : '';
+    return `<li class="flex items-start gap-2">
+      <span class="text-indigo2 mt-0.5">・</span>
+      <div class="flex-1 flex flex-wrap items-center gap-1.5">
+        <span class="text-xs text-ink/75">${ch.text}</span>${askChip}${taskBtn}
+      </div></li>`;
+  }).join('');
+
+  // 添付ファイル
+  const atts = m.attachments || [];
+  el('mailModalAttachWrap').classList.toggle('hidden', atts.length===0);
+  el('mailModalAttach').innerHTML = atts.map((a,i)=>{
+    const ic = FILE_ICON[a.type] || '📄';
+    return `<button onclick="previewAttach('${m.id}',${i})" class="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-white border border-indigo1/10 hover:border-gold hover:shadow-sm transition">
+      <span class="text-base">${ic}</span><span class="text-ink/70">${a.name}</span></button>`;
+  }).join('');
+  closePreview();
+
+  // 返信下書きは毎回リセット（トーンは丁寧に戻す）
+  el('mailModalDraft').classList.add('hidden');
+  el('mailModalDraftText').value = '';
+  currentTone = 'polite';
+  updateToneButtons();
+
+  // フッター操作
+  const draftBtn = m.cat==='junk' ? '' :
+    `<button onclick="showDraft('${m.id}')" class="text-sm font-bold text-cream bg-indigo1 hover:bg-indigo2 px-4 py-2 rounded-full transition">✍️ 返信の下書きを作成</button>`;
+  const moveBtn = m.cat==='junk' ? '' :
+    `<button onclick="moveMailToTask('${m.id}'); closeMail();" class="text-sm font-bold text-indigo1 bg-gold/25 hover:bg-gold/45 px-4 py-2 rounded-full transition">📌 メインタスクへ</button>`;
+  const delBtn = m.cat==='junk'
+    ? `<button onclick="deleteMail('${m.id}'); closeMail();" class="text-sm font-medium text-red-500 hover:bg-red-50 px-4 py-2 rounded-full transition">🗑 削除</button>`
+    : `<button onclick="deleteMail('${m.id}'); closeMail();" class="text-sm font-medium text-indigo2 hover:bg-indigo1/8 px-4 py-2 rounded-full transition">✓ 対応済みにする</button>`;
+  el('mailModalActions').innerHTML = draftBtn + moveBtn + delBtn +
+    `<button onclick="closeMail()" class="text-sm font-medium text-ink/50 hover:bg-indigo1/8 px-4 py-2 rounded-full transition">閉じる</button>`;
+
+  el('mailModal').classList.remove('hidden');
+
+  // 既読にする
+  if(!m.read){ m.read = true; renderMail(); }
+}
+function closeMail(){ el('mailModal').classList.add('hidden'); }
+
+/* 添付プレビュー（モック） */
+const FILE_ICON = { pdf:'📕', img:'🖼️', xlsx:'📗', docx:'📘' };
+function previewAttach(mailId, idx){
+  const m = mails.find(x=>x.id===mailId); if(!m) return;
+  const a = (m.attachments||[])[idx]; if(!a) return;
+  el('attachPreviewName').textContent = a.name;
+  let inner;
+  if(a.type==='img'){
+    inner = `<div class="w-full h-40 rounded-xl bg-gradient-to-br from-indigo1/10 to-gold/20 flex items-center justify-center text-5xl">🖼️</div>
+      <p class="text-xs text-ink/50 mt-3">画像プレビュー（モック）</p>`;
+  } else {
+    const ic = FILE_ICON[a.type] || '📄';
+    inner = `<div class="text-5xl mb-2">${ic}</div>
+      <p class="text-sm font-medium text-ink/70">${a.name}</p>
+      <p class="text-xs text-ink/45 mt-1">プレビュー（モック）— 実機ではここに中身が表示されます</p>`;
+  }
+  el('attachPreviewBody').innerHTML = inner;
+  el('attachPreview').classList.remove('hidden');
+  el('attachPreview').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function closePreview(){ el('attachPreview').classList.add('hidden'); }
+
+/* 返信下書き生成（トーン対応） */
+function genDraft(m, tone){
+  const T = {
+    polite:{ greet:'いつもお世話になっております。NS商事のかわうちです。', close:'引き続きどうぞよろしくお願いいたします。\n\nNS商事　かわうち' },
+    casual:{ greet:'お世話になっております、NS商事のかわうちです。',       close:'どうぞよろしくお願いします。\nNS商事 かわうち' },
+    brief: { greet:'NS商事のかわうちです。',                              close:'よろしくお願いいたします。\nかわうち' },
+  }[tone] || null;
+  const t = T || { greet:'いつもお世話になっております。NS商事のかわうちです。', close:'よろしくお願いいたします。\n\nNS商事　かわうち' };
+  const isApp = m.cat==='reply' && (m.flags||[]).includes('申請依頼');
+  let mid;
+  if(isApp){
+    mid = {
+      polite:`ご連絡いただいた件、承知いたしました。\n「${m.subject}」につきまして、内容を確認のうえ対応を進めてまいります。\n`+(m.deadline?`期限（${m.deadline}）に間に合うよう手配いたします。\n`:'')+`必要な書類や追加のご確認事項がございましたら、改めてご連絡いたします。`,
+      casual:`ご連絡ありがとうございます。\n「${m.subject}」の件、確認して対応を進めますね。\n`+(m.deadline?`期限（${m.deadline}）に間に合うよう進めます。\n`:'')+`必要なものがあれば、また連絡しますね。`,
+      brief: `「${m.subject}」の件、承知しました。対応を進めます。`+(m.deadline?`（期限：${m.deadline}）`:''),
+    }[tone] || '';
+  } else if(m.cat==='reply'){
+    mid = {
+      polite:`「${m.subject}」の件、確認いたしました。\n折り返しご対応のうえ、改めてご連絡差し上げます。`,
+      casual:`「${m.subject}」の件、確認しました。\n対応のうえ、改めてご連絡しますね。`,
+      brief: `「${m.subject}」の件、確認しました。追ってご連絡します。`,
+    }[tone] || '';
+  } else {
+    mid = {
+      polite:`「${m.subject}」の件、拝受いたしました。ありがとうございます。\n内容を確認し、必要な準備・調整を進めてまいります。\n次のお手続きやご連絡をお待ちしております。`,
+      casual:`「${m.subject}」の件、受け取りました。ありがとうございます。\n確認して、必要な準備を進めますね。次のご連絡、お待ちしています。`,
+      brief: `「${m.subject}」拝受しました。準備を進めます。次のご連絡お待ちします。`,
+    }[tone] || '';
+  }
+  return `${m.from} ご担当者さま\n\n${t.greet}\n\n${mid}\n\n${t.close}`;
+}
+function updateToneButtons(){
+  document.querySelectorAll('.tone-btn').forEach(b=>{
+    const active = b.dataset.tone===currentTone;
+    b.classList.toggle('tone-active', active);
+    b.classList.toggle('bg-white', !active);
+  });
+}
+function setTone(tone){
+  currentTone = tone;
+  updateToneButtons();
+  const m = mails.find(x=>x.id===currentMailId);
+  if(m) el('mailModalDraftText').value = genDraft(m, currentTone);
+}
+function showDraft(id){
+  const m = mails.find(x=>x.id===id); if(!m) return;
+  el('mailModalDraftText').value = genDraft(m, currentTone);
+  el('mailModalDraft').classList.remove('hidden');
+  updateToneButtons();
+  el('mailModalDraft').scrollIntoView({behavior:'smooth', block:'nearest'});
+  toast('返信の下書きを作成しました ✍️');
+}
+/* 確認事項をメインタスク化 */
+function addCheckTask(mailId, idx){
+  const m = mails.find(x=>x.id===mailId); if(!m) return;
+  const ch = (m.checks||[])[idx]; if(!ch) return;
+  addTask({ icon:'🧐', title:`【確認】${ch.ask}に：${ch.text}`, sub:`${m.from}への返信前に確認`, prio:3 });
+  toast(`確認タスクをメインへ追加しました 📌`);
+}
+function copyDraft(){
+  const ta = el('mailModalDraftText');
+  ta.select();
+  navigator.clipboard?.writeText(ta.value).then(()=>toast('下書きをコピーしました 📋')).catch(()=>toast('テキストを選択しました'));
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMail(); });
+
+function deleteJunk(){
+  const junk = mails.filter(m=>m.cat==='junk');
+  if(junk.length===0) return;
+  junk.forEach(m=>{ const node=el(m.id); if(node) node.classList.add('fade-out'); });
+  setTimeout(()=>{
+    mails = mails.filter(m=>m.cat!=='junk');
+    renderMail();
+    toast(`不要メール ${junk.length} 件を削除しました 🗑`);
+  },420);
+}
+
+/* ---------- よく見るサイト ---------- */
+let sites = [
+  { name:'入札情報サービス', url:'https://www.example-nyusatsu.jp', icon:'🏛️' },
+  { name:'電子入札システム', url:'https://www.example-ebid.lg.jp', icon:'📑' },
+  { name:'水道局 申請ポータル', url:'https://www.example-suido.lg.jp', icon:'💧' },
+  { name:'天気予報', url:'https://tenki.jp', icon:'☀️' },
+  { name:'ネットバンキング', url:'https://www.example-bank.co.jp', icon:'🏦' },
+  { name:'Googleカレンダー', url:'https://calendar.google.com', icon:'📅' },
+];
+function renderSites(){
+  el('siteList').innerHTML = sites.map((s,i)=>`
+    <div class="relative group">
+      <a href="${s.url}" target="_blank" rel="noopener" class="flex items-center gap-2 p-2.5 rounded-xl bg-cream border border-indigo1/8 hover:border-gold hover:shadow-sm transition">
+        <span class="text-lg shrink-0">${s.icon}</span>
+        <span class="text-xs text-ink/75 truncate">${s.name}</span>
+      </a>
+      <button onclick="removeSite(${i})" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-indigo1/15 text-ink/40 text-[10px] opacity-0 group-hover:opacity-100 hover:text-red-500 transition" title="削除">✕</button>
+    </div>`).join('');
+}
+function addSite(){
+  const name = el('siteName').value.trim();
+  let url = el('siteUrl').value.trim();
+  if(!name || !url){ toast('サイト名とURLを入力してください'); return; }
+  if(!/^https?:\/\//.test(url)) url = 'https://' + url;
+  sites.push({ name, url, icon:'🔗' });
+  el('siteName').value=''; el('siteUrl').value='';
+  renderSites();
+  toast('サイトを登録しました 🔗');
+}
+function removeSite(i){ sites.splice(i,1); renderSites(); }
+
+/* ---------- 予定調整 ---------- */
+let coordSeq = 10;
+let coords = [
+  { id:'c1', title:'○○建設との打合せ', wth:'佐藤様', slots:['6/10(火) 14:00','6/11(水) 10:00','6/12(木) 15:00'], confirmed:null },
+  { id:'c2', title:'社内ミーティング',   wth:'工事部', slots:['6/9(月) 16:00','6/10(火) 9:00'], confirmed:null },
+];
+function coordRow(co){
+  if(co.confirmed){
+    return `<div id="${co.id}" class="p-3.5 rounded-2xl bg-cream border border-green-200">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-medium text-ink">${co.title}</p>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✅ 確定</span>
+      </div>
+      <p class="text-xs text-ink/60 mt-1">${co.wth ? co.wth+'｜' : ''}${co.confirmed}</p>
+      <div class="flex gap-2 mt-2">
+        <button onclick="coordToTask('${co.id}')" class="text-[11px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2.5 py-1 rounded-full transition">📌 タスクへ</button>
+        <button onclick="removeCoord('${co.id}')" class="text-[11px] text-ink/45 hover:text-red-500 transition">削除</button>
+      </div>
+    </div>`;
+  }
+  const chips = co.slots.map((s,i)=>`<button onclick="confirmCoord('${co.id}',${i})" class="text-[11px] px-2.5 py-1 rounded-full bg-white border border-indigo1/12 hover:border-gold hover:bg-gold/10 transition">${s}</button>`).join('');
+  return `<div id="${co.id}" class="p-3.5 rounded-2xl bg-cream border border-indigo1/8">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm font-medium text-ink">${co.title}</p>
+      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-indigo2">調整中</span>
+    </div>
+    <p class="text-xs text-ink/50 mt-0.5 mb-2">${co.wth ? co.wth+'｜' : ''}候補から確定する日を選んでください</p>
+    <div class="flex flex-wrap gap-1.5">${chips}</div>
+    <button onclick="sendCandidates('${co.id}')" class="mt-2 text-[11px] text-indigo2 hover:text-gold font-medium transition">✉️ 候補日を相手に送る</button>
+  </div>`;
+}
+function renderCoords(){
+  el('coordList').innerHTML = coords.map(coordRow).join('');
+  const pend = coords.filter(c=>!c.confirmed).length;
+  el('coordCounter').textContent = pend>0 ? `調整中 ${pend}` : '';
+}
+function confirmCoord(id,i){
+  const co = coords.find(c=>c.id===id); if(!co) return;
+  co.confirmed = co.slots[i];
+  renderCoords();
+  toast(`「${co.title}」を ${co.confirmed} で確定しました ✅`);
+}
+function sendCandidates(id){
+  const co = coords.find(c=>c.id===id); if(!co) return;
+  toast('候補日をメールで送信しました ✉️（モック）');
+}
+function coordToTask(id){
+  const co = coords.find(c=>c.id===id); if(!co) return;
+  addTask({ icon:'📅', title:`${co.title}（${co.confirmed}）`, sub:co.wth?`${co.wth}との予定`:'確定した予定', prio:2 });
+  toast('予定をメインタスクに追加しました 📌');
+}
+function addCoord(){
+  const title = el('coordTitle').value.trim();
+  if(!title){ toast('調整したい予定を入力してください'); return; }
+  coords.push({ id:'c'+(coordSeq++), title, wth:'', slots:['候補日① 未定','候補日② 未定','候補日③ 未定'], confirmed:null });
+  el('coordTitle').value='';
+  renderCoords();
+  toast('予定調整を追加しました');
+}
+function removeCoord(id){ coords = coords.filter(c=>c.id!==id); renderCoords(); }
+
+/* ---------- タブ ---------- */
+function showTab(name){
+  el('tab-today').classList.toggle('hidden', name!=='today');
+  el('tab-backlog').classList.toggle('hidden', name!=='backlog');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    const active = b.dataset.tab===name;
+    b.classList.toggle('tab-active', active);
+    b.classList.toggle('bg-white', !active);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- ヘッダー時計 ---------- */
+function tick(){
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h<11?'おはようございます':h<17?'こんにちは':'おつかれさまです';
+  el('greeting').textContent = greet + '、かわうちさん';
+  const days=['日','月','火','水','木','金','土'];
+  el('clock').textContent = `${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}） ${String(h).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+/* ---------- トースト ---------- */
+let toastTimer;
+function toast(msg){
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.remove('translate-y-20','opacity-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.add('translate-y-20','opacity-0'), 2200);
+}
+
+/* ---------- 初期化 ---------- */
+renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords();
+tick(); setInterval(tick, 30000);
+</script>
+</body>
+</html>
