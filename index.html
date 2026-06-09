@@ -103,7 +103,15 @@
   <nav class="flex gap-2 mb-6 overflow-x-auto pb-1">
     <button data-tab="today"   onclick="showTab('today')"   class="tab-btn tab-active whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition">📋 今日のダッシュボード</button>
     <button data-tab="backlog" onclick="showTab('backlog')" class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">🌿 お帰りなさいタスク</button>
+    <button data-tab="fax"     onclick="showTab('fax')"     class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">📠 FAX処理</button>
+    <button data-tab="minutes" onclick="showTab('minutes')" class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">📝 議事録</button>
+    <button data-tab="docs"    onclick="showTab('docs')"    class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">📄 会議資料</button>
+    <button data-tab="bid"     onclick="showTab('bid')"     class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">🏛️ 入札管理</button>
   </nav>
+  <div class="flex items-center gap-2 mb-5 -mt-2">
+    <span class="text-[11px] px-2 py-0.5 rounded-full bg-gold/15 text-indigo2 font-medium">📋 Phase 1（実装済み）</span>
+    <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50">📠📝📄🏛️ Phase 3〜6（見本・これから実装）</span>
+  </div>
 
   <!-- ============ TODAY TAB ============ -->
   <div id="tab-today">
@@ -254,6 +262,126 @@
       <ul id="backlogList" class="space-y-2.5"></ul>
       <p id="backlogEmpty" class="hidden text-center py-10 text-ink/40 text-sm">🎉 たまりタスクはすべて片付きました。完璧です！</p>
     </section>
+  </div>
+
+  <!-- ============ FAX TAB (Phase 3 見本) ============ -->
+  <div id="tab-fax" class="hidden">
+    <section class="bg-white rounded-3xl card-shadow p-6 max-w-3xl mx-auto">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2">
+          <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>FAX処理
+        </h2>
+        <span id="faxCounter" class="text-xs text-ink/50"></span>
+      </div>
+      <p class="text-xs text-ink/45 mb-1">共有フォルダに届いたFAX（PDF）。プレビューして、5つの対応から選べます。</p>
+      <span class="inline-block text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50 mb-4">Phase 3・見本（これから本物のフォルダに接続）</span>
+      <ul id="faxList" class="space-y-3"></ul>
+      <p id="faxEmpty" class="hidden text-center py-10 text-ink/40 text-sm">📭 未処理のFAXはありません。</p>
+    </section>
+  </div>
+
+  <!-- ============ 議事録 TAB (Phase 4 見本) ============ -->
+  <div id="tab-minutes" class="hidden">
+    <section class="bg-white rounded-3xl card-shadow p-6 max-w-3xl mx-auto">
+      <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+        <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>議事録の自動作成
+      </h2>
+      <p class="text-xs text-ink/45 mb-1">iPhoneの音声入力でメモしたテキストを貼り付けて、「AIで整形」を押すだけ。</p>
+      <span class="inline-block text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50 mb-4">Phase 4・見本（これから本物のAIに接続）</span>
+      <textarea id="minutesInput" rows="6" class="w-full text-sm text-ink/80 leading-relaxed p-3 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition resize-y" placeholder="ここに会議メモ（音声入力テキスト）を貼り付け…">きょうの定例会議 出席は社長と工事の田中さんと事務の私 まず安全週間の話 現場の朝礼を徹底すること 次に来月の工事予定 A現場が15日着工 B現場は調整中 事務からは請求書の締めが20日になること あと事務所の備品発注を今週中に それと忘年会の日程を来週決める</textarea>
+      <button onclick="genMinutes()" class="mt-3 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">✨ AIで議事録に整形</button>
+
+      <div id="minutesResult" class="hidden mt-5 pt-5 border-t border-indigo1/8">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[11px] font-bold text-indigo2">📝 整形された議事録（プレビュー）</p>
+          <button onclick="copyMinutes()" class="text-[11px] font-medium text-indigo2 hover:text-gold transition">📋 コピー</button>
+        </div>
+        <pre id="minutesText" class="text-xs text-ink/80 leading-relaxed p-4 rounded-2xl bg-cream border border-indigo1/10 whitespace-pre-wrap font-sans"></pre>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button onclick="toast('OneDriveに保存しました（モック）💾')" class="bg-gold/25 text-indigo1 text-xs font-bold px-4 py-2 rounded-full hover:bg-gold/40 transition">💾 OneDriveに保存</button>
+          <button onclick="toast('Teamsに通知しました（モック）📣')" class="border border-indigo1/15 text-xs font-medium px-4 py-2 rounded-full hover:bg-indigo1 hover:text-cream transition">📣 Teamsに通知</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 会議資料 TAB (Phase 5 見本) ============ -->
+  <div id="tab-docs" class="hidden">
+    <section class="bg-white rounded-3xl card-shadow p-6 max-w-3xl mx-auto">
+      <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+        <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>会議資料の自動作成
+      </h2>
+      <p class="text-xs text-ink/45 mb-1">前回の議事録を読み込み、Wordひな形（工事／事務セクション）に自動で流し込みます。議題欄は空欄で出力。</p>
+      <span class="inline-block text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50 mb-4">Phase 5・見本（Phase 4とセットで実装）</span>
+      <button onclick="genDocs()" class="bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">📥 前回議事録を読み込んで資料を作成</button>
+
+      <div id="docsResult" class="hidden mt-5 pt-5 border-t border-indigo1/8">
+        <p class="text-[11px] font-bold text-indigo2 mb-2">📄 会議資料（Wordひな形・プレビュー）</p>
+        <div class="rounded-2xl bg-cream border border-indigo1/10 p-4 space-y-4 text-sm">
+          <div>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 議題</p>
+            <p class="text-ink/40 text-xs italic">（会議前に手動で記入）</p>
+          </div>
+          <div>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 工事セクション</p>
+            <p class="text-ink/75 text-xs leading-relaxed">・A現場：15日着工予定<br>・B現場：着工日は調整中<br>・現場朝礼の徹底（安全週間）</p>
+          </div>
+          <div>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 事務セクション</p>
+            <p class="text-ink/75 text-xs leading-relaxed">・請求書の締め：20日<br>・事務所備品の発注（今週中）<br>・忘年会の日程：来週決定</p>
+          </div>
+        </div>
+        <button onclick="toast('OneDriveに保存しました（モック）💾')" class="mt-3 bg-gold/25 text-indigo1 text-xs font-bold px-4 py-2 rounded-full hover:bg-gold/40 transition">💾 OneDriveに保存（.docx）</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 入札管理 TAB (Phase 6 見本) ============ -->
+  <div id="tab-bid" class="hidden">
+    <div class="grid lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
+
+      <!-- 7サイト巡回 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+          <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>入札サイトの巡回
+        </h2>
+        <p class="text-xs text-ink/45 mb-1">7サイトの新着案件をHISYOが自動チェック。</p>
+        <span class="inline-block text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50 mb-4">Phase 6・見本</span>
+        <ul id="bidSiteList" class="space-y-2"></ul>
+      </section>
+
+      <!-- 案件入力＋3箇所反映 / 開札結果 -->
+      <section class="space-y-6">
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+            <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>案件を登録（1回で3箇所へ）
+          </h2>
+          <p class="text-xs text-ink/45 mb-4">一度入力すれば、スプレッドシート・OneDrive・社長システムに自動反映。</p>
+          <div class="space-y-2">
+            <input id="bidName" type="text" placeholder="案件名（例：市道○○線 舗装工事）" class="w-full text-sm px-4 py-2.5 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+            <input id="bidOwner" type="text" placeholder="発注者（例：堺市）" class="w-full text-sm px-4 py-2.5 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+            <input id="bidDue" type="text" placeholder="入札締切（例：6/20）" class="w-full text-sm px-4 py-2.5 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          </div>
+          <button onclick="bidReflect()" class="mt-3 w-full bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">📤 3箇所にまとめて反映</button>
+          <div id="bidReflectDone" class="hidden mt-3 text-xs text-ink/70 bg-cream rounded-2xl border border-indigo1/8 p-3 leading-relaxed"></div>
+        </div>
+
+        <div class="bg-white rounded-3xl card-shadow p-6">
+          <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-3">
+            <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>開札結果の入力
+          </h2>
+          <div class="p-3.5 rounded-2xl bg-cream border border-indigo1/8">
+            <p class="text-sm font-medium text-ink">市道△△線 補修工事</p>
+            <p class="text-xs text-ink/50 mb-2">開札日：本日・結果待ち</p>
+            <div class="flex gap-2">
+              <button onclick="bidResult('落札')" class="flex-1 text-xs font-bold py-2 rounded-full bg-gold/25 text-indigo1 hover:bg-gold/40 transition">🎉 落札</button>
+              <button onclick="bidResult('失注')" class="flex-1 text-xs font-medium py-2 rounded-full border border-indigo1/15 hover:bg-indigo1 hover:text-cream transition">失注</button>
+            </div>
+            <p id="bidResultDone" class="hidden text-xs text-ink/70 mt-2"></p>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
 </main>
@@ -903,15 +1031,134 @@ function addCoord(){
 function removeCoord(id){ coords = coords.filter(c=>c.id!==id); renderCoords(); }
 
 /* ---------- タブ ---------- */
+const TABS = ['today','backlog','fax','minutes','docs','bid'];
 function showTab(name){
-  el('tab-today').classList.toggle('hidden', name!=='today');
-  el('tab-backlog').classList.toggle('hidden', name!=='backlog');
+  TABS.forEach(t=> el('tab-'+t).classList.toggle('hidden', t!==name));
   document.querySelectorAll('.tab-btn').forEach(b=>{
     const active = b.dataset.tab===name;
     b.classList.toggle('tab-active', active);
     b.classList.toggle('bg-white', !active);
   });
   window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- FAX処理（Phase 3 見本） ---------- */
+let faxes = [
+  { id:'f1', name:'御見積依頼_山田工務店.pdf', time:'本日 10:02', from:'山田工務店' },
+  { id:'f2', name:'工事依頼書_□□建設.pdf', time:'本日 9:15', from:'□□建設' },
+  { id:'f3', name:'納品書_設備商事.pdf', time:'昨日 17:40', from:'設備商事' },
+];
+const FAX_ACTIONS = [
+  { label:'🗑 削除', msg:'FAXを削除しました' },
+  { label:'👤 社長へTeams転送', msg:'社長へTeamsで転送しました' },
+  { label:'📠 別事業所へ送信', msg:'別事業所へFAX送信しました' },
+  { label:'💾 保存', msg:'フォルダに保存しました' },
+  { label:'⏸ 保留', msg:'保留にしました' },
+];
+function faxRow(f){
+  const actions = FAX_ACTIONS.map(a=>`<button onclick="faxAction('${f.id}','${a.msg}')" class="text-[11px] font-medium px-2.5 py-1 rounded-full border border-indigo1/12 hover:border-gold hover:bg-gold/10 transition">${a.label}</button>`).join('');
+  return `<li id="${f.id}" class="pop-in p-3.5 rounded-2xl bg-cream border border-indigo1/8">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">📄</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-ink truncate">${f.name}</p>
+        <p class="text-xs text-ink/50">${f.from}｜${f.time}</p>
+      </div>
+      <button onclick="faxPreview('${f.id}')" class="shrink-0 text-[11px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2.5 py-1 rounded-full transition">👁 プレビュー</button>
+    </div>
+    <div id="prev-${f.id}" class="hidden mt-3 rounded-xl bg-white border border-indigo1/10 p-5 text-center">
+      <div class="text-4xl mb-1">📄</div>
+      <p class="text-xs text-ink/60">${f.name}</p>
+      <p class="text-[11px] text-ink/40 mt-1">PDFプレビュー（モック）— 実機ではFAXの中身が表示されます</p>
+    </div>
+    <div class="flex flex-wrap gap-1.5 mt-3">${actions}</div>
+  </li>`;
+}
+function renderFax(){
+  el('faxList').innerHTML = faxes.map(faxRow).join('');
+  el('faxEmpty').classList.toggle('hidden', faxes.length>0);
+  el('faxCounter').textContent = faxes.length>0 ? `未処理 ${faxes.length}` : '';
+}
+function faxPreview(id){ const p=el('prev-'+id); if(p) p.classList.toggle('hidden'); }
+function faxAction(id, msg){
+  const node=el(id);
+  if(node){ node.classList.add('fade-out'); setTimeout(()=>{ faxes=faxes.filter(f=>f.id!==id); renderFax(); },420); }
+  toast(msg);
+}
+
+/* ---------- 議事録（Phase 4 見本） ---------- */
+function genMinutes(){
+  const today = new Date();
+  const txt = `《 定例会議 議事録 》
+日時：${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日
+出席者：社長、田中（工事）、かわうち（事務）
+
+■ 議題と決定事項
+1. 安全週間について
+   ・現場の朝礼を徹底する
+
+2. 来月の工事予定
+   ・A現場：15日着工
+   ・B現場：着工日は調整中
+
+3. 事務連絡
+   ・請求書の締めは20日
+   ・事務所の備品発注を今週中に実施
+
+■ ToDo（次回までに）
+・備品発注（事務）
+・忘年会の日程を来週決定`;
+  el('minutesText').textContent = txt;
+  el('minutesResult').classList.remove('hidden');
+  el('minutesResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+  toast('議事録に整形しました ✨');
+}
+function copyMinutes(){
+  const t=el('minutesText').textContent;
+  navigator.clipboard?.writeText(t).then(()=>toast('議事録をコピーしました 📋')).catch(()=>toast('コピーできませんでした'));
+}
+
+/* ---------- 会議資料（Phase 5 見本） ---------- */
+function genDocs(){
+  el('docsResult').classList.remove('hidden');
+  el('docsResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+  toast('前回議事録から資料を作成しました 📄');
+}
+
+/* ---------- 入札管理（Phase 6 見本） ---------- */
+const bidSites = [
+  { name:'大阪広域水道企業団', status:'new', n:2 },
+  { name:'大阪府住宅供給公社', status:'new', n:1 },
+  { name:'大阪府', status:'none' },
+  { name:'大阪市', status:'new', n:3 },
+  { name:'堺市', status:'none' },
+  { name:'岸和田市', status:'none' },
+  { name:'泉大津市', status:'new', n:1 },
+];
+function renderBidSites(){
+  el('bidSiteList').innerHTML = bidSites.map(s=>{
+    const badge = s.status==='new'
+      ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-indigo2">🆕 新着 ${s.n}</span>`
+      : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/45">新着なし</span>`;
+    return `<li class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-cream border border-indigo1/8">
+      <span class="text-sm text-ink/80">${s.name}</span>${badge}</li>`;
+  }).join('');
+}
+function bidReflect(){
+  const name=el('bidName').value.trim();
+  if(!name){ toast('案件名を入力してください'); return; }
+  const owner=el('bidOwner').value.trim();
+  const due=el('bidDue').value.trim();
+  const done=el('bidReflectDone');
+  done.classList.remove('hidden');
+  done.innerHTML = `✅ 「${name}」${owner?'（'+owner+'）':''}${due?'・締切'+due:''} を反映しました：<br>・スプレッドシート ✔　・OneDrive ✔　・社長システム ✔（モック）`;
+  toast('3箇所に反映しました 📤');
+}
+function bidResult(r){
+  const e=el('bidResultDone');
+  e.classList.remove('hidden');
+  e.textContent = r==='落札' ? '🎉 落札を記録し、スプレッドシートに反映しました（モック）' : '失注を記録しました（モック）';
+  toast(`結果（${r}）を記録しました`);
 }
 
 /* ---------- ヘッダー時計 ---------- */
@@ -935,7 +1182,7 @@ function toast(msg){
 }
 
 /* ---------- 初期化 ---------- */
-renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords();
+renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords(); renderFax(); renderBidSites();
 tick(); setInterval(tick, 30000);
 
 /* ---------- Googleログイン認証 ---------- */
@@ -976,7 +1223,10 @@ function initAuth(){
   google.accounts.id.renderButton(el('gsiButton'), { theme:'filled_blue', size:'large', text:'signin_with', shape:'pill', locale:'ja' });
   google.accounts.id.prompt();
 }
-initAuth();
+// ローカル/プレビューで開いたときはログインを省略（公開URLでは必須）
+const IS_PREVIEW = location.protocol==='file:' || location.hostname==='localhost' || location.hostname==='127.0.0.1' || location.hostname==='';
+if(IS_PREVIEW){ el('loginGate').style.display='none'; }
+else { initAuth(); }
 </script>
 </body>
 </html>
