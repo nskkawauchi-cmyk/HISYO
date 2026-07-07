@@ -107,6 +107,7 @@
     <button data-tab="minutes" onclick="showTab('minutes')" class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">📝 議事録</button>
     <button data-tab="docs"    onclick="showTab('docs')"    class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">📄 会議資料</button>
     <button data-tab="bid"     onclick="showTab('bid')"     class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">🏛️ 入札管理</button>
+    <button data-tab="settings" onclick="showTab('settings')" class="tab-btn whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium border border-indigo1/15 transition bg-white">⚙️ 設定</button>
   </nav>
   <div class="flex items-center gap-2 mb-5 -mt-2">
     <span class="text-[11px] px-2 py-0.5 rounded-full bg-gold/15 text-indigo2 font-medium">📋 Phase 1（実装済み）</span>
@@ -166,6 +167,12 @@
           </div>
           <p class="text-xs text-ink/45 mb-4">HISYOが重要度と急ぎ度を読み取り、自動で振り分けます。要約つきで中身がひと目で。</p>
 
+          <!-- 学習による自動削除のお知らせ -->
+          <div id="autoDelBanner" class="hidden mb-4 flex items-center justify-between gap-3 p-3 rounded-2xl bg-indigo1/5 border border-indigo1/10">
+            <p class="text-xs text-ink/70">🧠 HISYOが学習ルールで不要メール <span id="autoDelCount" class="font-bold text-indigo1">0</span> 件を自動削除しました</p>
+            <button onclick="restoreAutoDeleted()" class="shrink-0 text-[11px] font-medium text-indigo2 hover:text-gold transition">元に戻して確認</button>
+          </div>
+
           <!-- フィルタチップ -->
           <div class="flex flex-wrap gap-2 mb-4">
             <button data-filter="all"   onclick="filterMail('all')"   class="mail-chip mail-chip-active text-xs font-medium px-3.5 py-1.5 rounded-full border border-indigo1/15 transition">すべて</button>
@@ -181,6 +188,12 @@
           <div id="junkBar" class="hidden mt-4 flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-cream border border-indigo1/8">
             <p class="text-xs text-ink/60"><span id="junkBarCount" class="font-bold text-ink">0</span> 件の不要メール（メルマガ・広告など）</p>
             <button onclick="deleteJunk()" class="shrink-0 bg-indigo1 text-cream text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo2 transition">🗑 一括で削除</button>
+          </div>
+
+          <!-- 自動削除の学習ルール -->
+          <div id="learnPanel" class="hidden mt-4 pt-4 border-t border-indigo1/8">
+            <p class="text-[11px] font-bold text-indigo2 mb-2">🧠 自動削除の学習ルール（この差出人は今後ずっと自動削除）</p>
+            <div id="ruleList" class="flex flex-wrap gap-2"></div>
           </div>
         </div>
       </section>
@@ -288,7 +301,7 @@
       </h2>
       <p class="text-xs text-ink/45 mb-1">iPhoneの音声入力でメモしたテキストを貼り付けて、「AIで整形」を押すだけ。</p>
       <span class="inline-block text-[11px] px-2 py-0.5 rounded-full bg-indigo1/8 text-ink/50 mb-4">Phase 4・見本（これから本物のAIに接続）</span>
-      <textarea id="minutesInput" rows="6" class="w-full text-sm text-ink/80 leading-relaxed p-3 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition resize-y" placeholder="ここに会議メモ（音声入力テキスト）を貼り付け…">きょうの定例会議 出席は社長と工事の田中さんと事務の私 まず安全週間の話 現場の朝礼を徹底すること 次に来月の工事予定 A現場が15日着工 B現場は調整中 事務からは請求書の締めが20日になること あと事務所の備品発注を今週中に それと忘年会の日程を来週決める</textarea>
+      <textarea id="minutesInput" rows="6" class="w-full text-sm text-ink/80 leading-relaxed p-3 rounded-2xl bg-cream border border-indigo1/10 focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition resize-y" placeholder="ここに会議メモ（音声入力テキスト）を貼り付け…">5/29の工事部会議 出席は社長 吉岡リーダー 相良 小林 川内 まず社長から今期スローガンの話 お客様や協力業者の期待を超える行動が感動につながる 見積を早く 連絡を迅速に 丁寧に それからコアバリューを各自1つ選んで1か月実践する 人材育成は若手職人を採用して施工管理もできるよう育てる方針 協力業者はツクリンクや助太刀の活用を検討 現場はさくら台こども園と堺西高校 上病院案件も予定 4月は売上970万くらい利益42万くらい 近畿商事さんの190万がまだ未入金で法的手続きも検討 工事事務はシステム化を業務担当主体で進める 給水申請アプリ継続 入札と経理のフロー作成 マニュアル整備で属人化解消</textarea>
       <button onclick="genMinutes()" class="mt-3 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">✨ AIで議事録に整形</button>
 
       <div id="minutesResult" class="hidden mt-5 pt-5 border-t border-indigo1/8">
@@ -318,17 +331,22 @@
       <div id="docsResult" class="hidden mt-5 pt-5 border-t border-indigo1/8">
         <p class="text-[11px] font-bold text-indigo2 mb-2">📄 会議資料（Wordひな形・プレビュー）</p>
         <div class="rounded-2xl bg-cream border border-indigo1/10 p-4 space-y-4 text-sm">
+          <p class="font-bold text-indigo1 text-center">26期　第○回（○月度）工事部会議</p>
           <div>
-            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 議題</p>
-            <p class="text-ink/40 text-xs italic">（会議前に手動で記入）</p>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 会議情報</p>
+            <p class="text-ink/75 text-xs leading-relaxed">日時：令和○年○月○日（○）9:30〜10:30<br>場所：本社会議室<br>参加者：社長、吉岡リーダー、相良、小林、川内<br>議事録作成者：川内</p>
           </div>
           <div>
-            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 工事セクション</p>
-            <p class="text-ink/75 text-xs leading-relaxed">・A現場：15日着工予定<br>・B現場：着工日は調整中<br>・現場朝礼の徹底（安全週間）</p>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ スローガン</p>
+            <p class="text-ink/75 text-xs leading-relaxed">「言葉に心を！行動に誠意を！感謝を忘れずワンチーム！！」</p>
           </div>
           <div>
-            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 事務セクション</p>
-            <p class="text-ink/75 text-xs leading-relaxed">・請求書の締め：20日<br>・事務所備品の発注（今週中）<br>・忘年会の日程：来週決定</p>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 前半：工事部 会議</p>
+            <p class="text-ink/75 text-xs leading-relaxed">1. 開会・経営理念唱和（苦難福門 p.24）<br>2. 連絡事項等<br>3. 収支報告（売上／純利益／期純利益）<br>4. 未成工事・近況報告<br>5. 成功体験・良かったこと<br>6. 議題　<span class="text-ink/40 italic">（※会議前に記入・空欄）</span><br>7. 安全講習（別紙参照）</p>
+          </div>
+          <div>
+            <p class="font-bold text-indigo1 border-b border-indigo1/10 pb-1 mb-2">■ 後半：工事事務 会議</p>
+            <p class="text-ink/75 text-xs leading-relaxed">1. 前回議題の確認（議事録確認 ※別紙）<br>2. 入札状況報告（スプレッドシート参照）<br>3. 現状の課題・問題点</p>
           </div>
         </div>
         <button onclick="toast('OneDriveに保存しました（モック）💾')" class="mt-3 bg-gold/25 text-indigo1 text-xs font-bold px-4 py-2 rounded-full hover:bg-gold/40 transition">💾 OneDriveに保存（.docx）</button>
@@ -381,6 +399,48 @@
           </div>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- ============ 設定 TAB（差出人ルール） ============ -->
+  <div id="tab-settings" class="hidden">
+    <div class="max-w-3xl mx-auto space-y-6">
+      <div class="text-center mb-2">
+        <h2 class="font-serif text-indigo1 text-xl">メールの差出人ルール設定</h2>
+        <p class="text-xs text-ink/50 mt-1">画面から追加・削除できます（コード編集は不要）。設定はこのブラウザに保存され、閉じても残ります。</p>
+      </div>
+
+      <!-- 最優先 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h3 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+          <span class="w-1.5 h-5 bg-red-400 rounded-full inline-block"></span>🔴 最優先にする差出人・キーワード
+        </h3>
+        <p class="text-xs text-ink/45 mb-4">ここに登録した差出人・言葉を含むメールは、最優先（見逃さない）として扱います。</p>
+        <div class="flex gap-2 mb-3">
+          <input id="prioInput" type="text" placeholder="例：市役所／社長／至急　など" onkeydown="if(event.key==='Enter') addPriority()" class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          <button onclick="addPriority()" class="shrink-0 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">＋ 追加</button>
+        </div>
+        <div id="prioRuleList" class="flex flex-wrap gap-2"></div>
+        <p id="prioEmpty" class="hidden text-xs text-ink/40">まだ登録がありません。</p>
+      </section>
+
+      <!-- 不要・自動削除 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h3 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+          <span class="w-1.5 h-5 bg-indigo1/30 rounded-full inline-block"></span>⚪ 不要（自動削除）にする差出人・キーワード
+        </h3>
+        <p class="text-xs text-ink/45 mb-4">ここに登録した差出人・言葉を含むメールは、開いた時点でHISYOが自動削除します（元に戻す可）。</p>
+        <div class="flex gap-2 mb-3">
+          <input id="autoDelInput" type="text" placeholder="例：no-reply／セール／ポイント　など" onkeydown="if(event.key==='Enter') addAutoDeleteRule()" class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          <button onclick="addAutoDeleteRule()" class="shrink-0 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">＋ 追加</button>
+        </div>
+        <div id="settingsRuleList" class="flex flex-wrap gap-2"></div>
+        <p id="autoDelEmpty" class="hidden text-xs text-ink/40">まだ登録がありません。</p>
+      </section>
+
+      <p class="text-[11px] text-ink/40 text-center leading-relaxed">
+        ※ 現在は「このブラウザ内」に保存されます。全員で同じルールを共有する仕組みは Phase 2（本物のメール連携）で実装予定です。
+      </p>
     </div>
   </div>
 
@@ -706,6 +766,9 @@ function mailRow(m){
   const deadline = m.deadline ? `<span class="text-[11px] font-bold text-red-600">⏰ ${m.deadline}</span>` : '';
   const moveBtn = m.cat==='junk' ? '' :
     `<button onclick="event.stopPropagation(); moveMailToTask('${m.id}')" class="text-[11px] font-bold text-indigo1 bg-gold/20 hover:bg-gold/40 px-2.5 py-1 rounded-full transition">📌 メインへ</button>`;
+  const learnBtn = m.cat==='junk'
+    ? `<button onclick="event.stopPropagation(); learnSender('${m.id}')" class="text-[11px] font-bold text-indigo1 bg-indigo1/8 hover:bg-gold/30 px-2.5 py-1 rounded-full transition">🧠 今後も自動削除</button>`
+    : '';
   const action = m.cat==='junk'
     ? `<button onclick="event.stopPropagation(); deleteMail('${m.id}')" class="text-[11px] text-ink/45 hover:text-red-500 font-medium transition">🗑 削除</button>`
     : `<button onclick="event.stopPropagation(); deleteMail('${m.id}')" class="text-[11px] text-indigo2 hover:text-gold font-medium transition">対応済み →</button>`;
@@ -715,10 +778,12 @@ function mailRow(m){
   const clip = (m.attachments&&m.attachments.length) ? `<span class="text-[11px] text-ink/40">📎${m.attachments.length}</span>` : '';
   const needAsk = (m.checks||[]).some(c=>c.ask);
   const askChip = needAsk ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo1/8 text-indigo2">🧐 要・社内確認</span>' : '';
+  const prioTag = isPriority(m) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">⭐ 最優先（設定）</span>' : '';
   return `<li id="${m.id}" onclick="openMail('${m.id}')" class="pop-in cursor-pointer border-l-4 ${c.border} bg-cream rounded-r-2xl p-3.5 hover:bg-indigo1/[0.03] hover:shadow-sm transition ${dim}">
     <div class="flex items-center gap-2 mb-1 flex-wrap">
       ${dot}
       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${c.dot} ${c.label}</span>
+      ${prioTag}
       ${askChip}
       ${flags}
       <span class="ml-auto flex items-center gap-1.5 text-[11px] text-ink/45">${clip}${m.from}</span>
@@ -727,7 +792,7 @@ function mailRow(m){
     <p class="text-xs text-ink/55 leading-relaxed mt-1">📝 ${m.summary}</p>
     <div class="flex items-center justify-between mt-2 gap-2">
       ${deadline || '<span class="text-[11px] text-ink/35">クリックで本文を開く</span>'}
-      <div class="flex items-center gap-2">${moveBtn}${action}</div>
+      <div class="flex items-center gap-2 flex-wrap justify-end">${moveBtn}${learnBtn}${action}</div>
     </div>
   </li>`;
 }
@@ -747,6 +812,110 @@ function renderMail(){
   const showBar = junkN>0 && (mailFilter==='all' || mailFilter==='junk');
   el('junkBar').classList.toggle('hidden', !showBar);
   el('junkBarCount').textContent = junkN;
+  renderLearn();
+}
+/* 差出人ルール（不要=自動削除／最優先）。ブラウザに保存して閉じても残す */
+let autoDeleteRules = ['no-reply＠通販サイト']; // 不要・自動削除（既定例：通販・ポイント販促）
+let prioritySenders = ['市役所','水道局','社長','至急','落札']; // 最優先（既定例）
+let autoDeletedLog = [];
+
+function loadRules(){
+  try{
+    const a = JSON.parse(localStorage.getItem('hisyo_autoDeleteRules'));
+    const p = JSON.parse(localStorage.getItem('hisyo_prioritySenders'));
+    if(Array.isArray(a)) autoDeleteRules = a;
+    if(Array.isArray(p)) prioritySenders = p;
+  }catch(e){}
+}
+function saveRules(){
+  try{
+    localStorage.setItem('hisyo_autoDeleteRules', JSON.stringify(autoDeleteRules));
+    localStorage.setItem('hisyo_prioritySenders', JSON.stringify(prioritySenders));
+  }catch(e){}
+}
+function mailMatches(m, rule){
+  if(!rule) return false;
+  return (m.from && m.from.includes(rule)) || (m.subject && m.subject.includes(rule));
+}
+function isPriority(m){ return prioritySenders.some(p=> mailMatches(m, p)); }
+
+function applyAutoDelete(){
+  const keep = [];
+  mails.forEach(m=>{
+    if(m.cat==='junk' && autoDeleteRules.some(r=> mailMatches(m, r))) autoDeletedLog.push(m);
+    else keep.push(m);
+  });
+  mails = keep;
+}
+function renderLearn(){
+  const n = autoDeletedLog.length;
+  el('autoDelBanner').classList.toggle('hidden', n===0);
+  if(n) el('autoDelCount').textContent = n;
+  el('learnPanel').classList.toggle('hidden', autoDeleteRules.length===0);
+  el('ruleList').innerHTML = autoDeleteRules.map((r,i)=>`<span class="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-cream border border-indigo1/10 text-ink/70">${r}<button onclick="removeRule(${i})" class="text-ink/40 hover:text-red-500 leading-none">✕</button></span>`).join('');
+}
+function learnSender(id){
+  const m = mails.find(x=>x.id===id); if(!m) return;
+  if(!autoDeleteRules.includes(m.from)) autoDeleteRules.push(m.from);
+  saveRules();
+  const victims = mails.filter(x=>x.from===m.from);
+  victims.forEach(v=>{ const node=el(v.id); if(node) node.classList.add('fade-out'); autoDeletedLog.push(v); });
+  setTimeout(()=>{ mails = mails.filter(x=>x.from!==m.from); renderMail(); renderSettings(); }, 420);
+  toast(`今後「${m.from}」からのメールは自動で削除します 🧠`);
+}
+function removeRule(i){
+  autoDeleteRules.splice(i,1); saveRules();
+  renderLearn(); renderSettings();
+  toast('自動削除ルールを削除しました');
+}
+function restoreAutoDeleted(){
+  if(autoDeletedLog.length===0) return;
+  mails = autoDeletedLog.concat(mails);
+  autoDeletedLog = [];
+  renderMail();
+  toast('自動削除したメールを元に戻しました');
+}
+
+/* ---- 設定画面：差出人ルールの追加・削除 ---- */
+function addAutoDeleteRule(){
+  const inp = el('autoDelInput'); const v = inp.value.trim();
+  if(!v){ inp.focus(); return; }
+  if(!autoDeleteRules.includes(v)) autoDeleteRules.push(v);
+  saveRules();
+  inp.value=''; inp.focus();
+  // いま表示中の不要メールで該当するものは即・自動削除
+  const victims = mails.filter(m=> m.cat==='junk' && mailMatches(m, v));
+  victims.forEach(x=> autoDeletedLog.push(x));
+  mails = mails.filter(m=> !(m.cat==='junk' && mailMatches(m, v)));
+  renderMail(); renderSettings();
+  toast(`「${v}」を自動削除ルールに追加しました 🧠`);
+}
+function addPriority(){
+  const inp = el('prioInput'); const v = inp.value.trim();
+  if(!v){ inp.focus(); return; }
+  if(!prioritySenders.includes(v)) prioritySenders.push(v);
+  saveRules();
+  inp.value=''; inp.focus();
+  renderMail(); renderSettings();
+  toast(`「${v}」を最優先ルールに追加しました 🔴`);
+}
+function removePriority(i){
+  prioritySenders.splice(i,1); saveRules();
+  renderMail(); renderSettings();
+  toast('最優先ルールを削除しました');
+}
+function ruleChip(text, onRemove){
+  return `<span class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-cream border border-indigo1/10 text-ink/75">${text}<button onclick="${onRemove}" class="text-ink/40 hover:text-red-500 leading-none">✕</button></span>`;
+}
+function renderSettings(){
+  const pl = el('prioRuleList'); if(pl){
+    pl.innerHTML = prioritySenders.map((r,i)=> ruleChip(r, `removePriority(${i})`)).join('');
+    el('prioEmpty').classList.toggle('hidden', prioritySenders.length>0);
+  }
+  const al = el('settingsRuleList'); if(al){
+    al.innerHTML = autoDeleteRules.map((r,i)=> ruleChip(r, `removeRule(${i})`)).join('');
+    el('autoDelEmpty').classList.toggle('hidden', autoDeleteRules.length>0);
+  }
 }
 function filterMail(f){
   mailFilter = f;
@@ -1031,7 +1200,7 @@ function addCoord(){
 function removeCoord(id){ coords = coords.filter(c=>c.id!==id); renderCoords(); }
 
 /* ---------- タブ ---------- */
-const TABS = ['today','backlog','fax','minutes','docs','bid'];
+const TABS = ['today','backlog','fax','minutes','docs','bid','settings'];
 function showTab(name){
   TABS.forEach(t=> el('tab-'+t).classList.toggle('hidden', t!==name));
   document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -1089,25 +1258,46 @@ function faxAction(id, msg){
 /* ---------- 議事録（Phase 4 見本） ---------- */
 function genMinutes(){
   const today = new Date();
-  const txt = `《 定例会議 議事録 》
-日時：${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日
-出席者：社長、田中（工事）、かわうち（事務）
+  const m = today.getMonth()+1;
+  const txt = `工事部　議事録（${m}月）
 
-■ 議題と決定事項
-1. 安全週間について
-   ・現場の朝礼を徹底する
+■ 会議情報
+日時：令和8年${m}月29日（金）9:30〜11:00
+場所：本社会議室
+参加者：社長、吉岡、相良、小林、川内
+議事録作成者：川内
 
-2. 来月の工事予定
-   ・A現場：15日着工
-   ・B現場：着工日は調整中
+【工事課】
+1. 経営方針について
+　今期スローガンについて社長より説明。お客様や協力業者の期待を超える行動が感動につながる。見積提出を早く・連絡を迅速に・丁寧な対応を意識する。
+2. コアバリューの実践について
+　各自がコアバリューから1項目を選び、1か月間意識して行動。来月の会議で実践内容を共有し相互評価する。
+3. 人材育成方針について
+　若手職人を採用し、施工管理もできる人材へ育成する方針。資格取得を推奨。
+4. 協力業者・応援体制について
+　小規模・短期工事への対応力向上のため、ツクリンク・助太刀などの活用を検討。
+5. 現場状況報告
+　さくら台こども園、堺西高校、上病院案件（予定）など。大型案件増に伴い人員配置・協力体制の強化が必要。
+6. 売上・利益状況
+　4月実績：売上 約970万円／利益 約42万円。
+7. 未収金について
+　近畿商事様 約190万円が未入金。利息請求・少額訴訟等の法的手続きを含め対応を検討。
 
-3. 事務連絡
-   ・請求書の締めは20日
-   ・事務所の備品発注を今週中に実施
-
-■ ToDo（次回までに）
-・備品発注（事務）
-・忘年会の日程を来週決定`;
+【工事事務】
+1. システム化推進について
+　業務を知っている担当者が主体となりシステム改善に参加する方針。
+2. 給水申請アプリについて
+　誰でも申請書を作成でき、属人化を防ぎ、作業時間を短縮することを目的に開発継続。
+3. 社内システム勉強会について
+　アプリ改修・業務効率化・AI活用などを学ぶ勉強会を実施。
+4. 入札業務の標準化
+　フロー・手順書・市町村別の注意事項を整理し、誰でも同じ品質で対応できる体制へ。
+5. 経理業務の標準化
+　月次処理フロー・配賦ルール・未収金管理方法などを整理。
+6. 原価配賦について
+　配賦結果の不整合についてシステム会社へ確認。労務費・経費の配賦方法を再検証。
+7. 工事事務の今後の重点課題
+　「誰でもできる仕組みを作る」を重点課題に、各種申請業務の標準化・マニュアル整備を進める。`;
   el('minutesText').textContent = txt;
   el('minutesResult').classList.remove('hidden');
   el('minutesResult').scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -1182,7 +1372,8 @@ function toast(msg){
 }
 
 /* ---------- 初期化 ---------- */
-renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords(); renderFax(); renderBidSites();
+loadRules(); applyAutoDelete();
+renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords(); renderFax(); renderBidSites(); renderSettings();
 tick(); setInterval(tick, 30000);
 
 /* ---------- Googleログイン認証 ---------- */
