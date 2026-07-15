@@ -39,6 +39,7 @@
   .mail-chip-active { background:#1E1B4B; color:#FAF8F4; }
   .tone-active { background:#3A3784; color:#FAF8F4; border-color:#3A3784; }
   .mood-active { background:#1E1B4B; color:#FAF8F4; border-color:#1E1B4B; }
+  .dmood-active { background:#1E1B4B; color:#FAF8F4; border-color:#1E1B4B; }
 </style>
 </head>
 <body class="font-sans min-h-screen">
@@ -231,15 +232,9 @@
           <h2 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
             <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>よく見るサイト
           </h2>
-          <p class="text-xs text-ink/45 mb-3">毎日チェックするページを登録。クリックで開きます。</p>
+          <p class="text-xs text-ink/45 mb-3">クリックで開きます。追加・削除は「⚙️ 設定」から。</p>
           <div id="siteList" class="grid grid-cols-2 gap-2"></div>
-          <div class="mt-3 pt-3 border-t border-indigo1/8 flex flex-col gap-2">
-            <input id="siteName" type="text" placeholder="サイト名（例：入札情報）" class="text-xs px-3 py-2 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
-            <div class="flex gap-2">
-              <input id="siteUrl" type="text" placeholder="https://…" class="flex-1 text-xs px-3 py-2 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
-              <button onclick="addSite()" class="shrink-0 bg-indigo1 text-cream text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo2 transition">＋ 登録</button>
-            </div>
-          </div>
+          <button onclick="showTab('settings')" class="mt-3 w-full text-[11px] text-indigo2 hover:text-gold font-medium py-2 border-t border-indigo1/8 transition">⚙️ 設定でサイトを追加・編集</button>
         </div>
 
         <!-- 予定調整 -->
@@ -438,8 +433,57 @@
         <p id="autoDelEmpty" class="hidden text-xs text-ink/40">まだ登録がありません。</p>
       </section>
 
+      <!-- よく見るサイトの登録 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h3 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+          <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>🔗 よく見るサイトの登録
+        </h3>
+        <p class="text-xs text-ink/45 mb-4">ここで登録すると、ダッシュボードの「よく見るサイト」に表示されます。</p>
+        <div class="flex flex-col sm:flex-row gap-2 mb-3">
+          <input id="siteNameSet" type="text" placeholder="サイト名（例：入札情報）" class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          <input id="siteUrlSet" type="text" placeholder="https://…" class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          <button onclick="addSite()" class="shrink-0 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">＋ 登録</button>
+        </div>
+        <div id="siteManageList" class="space-y-2"></div>
+      </section>
+
+      <!-- 体調・気分と通知 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h3 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-4">
+          <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>🌤 体調・気分と通知
+        </h3>
+        <p class="text-xs text-ink/55 mb-2">アプリを開いたときの初期の体調・気分</p>
+        <div class="flex flex-wrap gap-1.5 mb-5">
+          <button data-dmood="great"  onclick="setDefaultMood('great')"  class="dmood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🌟 絶好調</button>
+          <button data-dmood="normal" onclick="setDefaultMood('normal')" class="dmood-btn text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🙂 ふつう</button>
+          <button data-dmood="tired"  onclick="setDefaultMood('tired')"  class="dmood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">😮‍💨 やや疲れ気味</button>
+          <button data-dmood="worn"   onclick="setDefaultMood('worn')"   class="dmood-btn bg-white text-xs font-medium px-3 py-1.5 rounded-full border border-indigo1/15 transition">🥱 かなり疲れた</button>
+        </div>
+        <div class="flex items-center justify-between border-t border-indigo1/8 pt-4">
+          <div>
+            <p class="text-sm font-medium text-ink">画面下の通知（お知らせポップ）</p>
+            <p class="text-xs text-ink/45">操作したときの「◯◯しました」などの表示</p>
+          </div>
+          <button id="toastToggle" onclick="toggleToast()" class="shrink-0 text-xs font-bold px-4 py-2 rounded-full transition"></button>
+        </div>
+      </section>
+
+      <!-- 予定調整の定型 -->
+      <section class="bg-white rounded-3xl card-shadow p-6">
+        <h3 class="font-serif text-indigo1 text-lg flex items-center gap-2 mb-1">
+          <span class="w-1.5 h-5 bg-gold rounded-full inline-block"></span>📅 予定調整の定型（よく使う候補時間帯）
+        </h3>
+        <p class="text-xs text-ink/45 mb-4">登録しておくと、新しい予定調整の候補にこの時間帯が自動で入ります。</p>
+        <div class="flex gap-2 mb-3">
+          <input id="coordTplInput" type="text" placeholder="例：火 14:00／水 10:00　など" onkeydown="if(event.key==='Enter') addCoordTemplate()" class="flex-1 text-sm px-4 py-2.5 rounded-full bg-cream border border-indigo1/10 focus:outline-none focus:border-gold transition placeholder:text-ink/35">
+          <button onclick="addCoordTemplate()" class="shrink-0 bg-indigo1 text-cream text-sm font-bold px-5 py-2.5 rounded-full hover:bg-indigo2 transition">＋ 追加</button>
+        </div>
+        <div id="coordTplList" class="flex flex-wrap gap-2"></div>
+        <p id="coordTplEmpty" class="hidden text-xs text-ink/40">まだ登録がありません。</p>
+      </section>
+
       <p class="text-[11px] text-ink/40 text-center leading-relaxed">
-        ※ 現在は「このブラウザ内」に保存されます。全員で同じルールを共有する仕組みは Phase 2（本物のメール連携）で実装予定です。
+        ※ これらの設定は「このブラウザ内」に保存されます。全員で共有する仕組みは Phase 2 で実装予定です。
       </p>
     </div>
   </div>
@@ -825,6 +869,14 @@ function loadRules(){
     const p = JSON.parse(localStorage.getItem('hisyo_prioritySenders'));
     if(Array.isArray(a)) autoDeleteRules = a;
     if(Array.isArray(p)) prioritySenders = p;
+    const sv = JSON.parse(localStorage.getItem('hisyo_sites'));
+    if(Array.isArray(sv)) sites = sv;
+    const ct = JSON.parse(localStorage.getItem('hisyo_coordTemplates'));
+    if(Array.isArray(ct)) coordTemplates = ct;
+    const dm = localStorage.getItem('hisyo_defaultMood');
+    if(dm) defaultMood = dm;
+    const te = localStorage.getItem('hisyo_toastEnabled');
+    if(te!==null) toastEnabled = JSON.parse(te);
   }catch(e){}
 }
 function saveRules(){
@@ -1125,18 +1177,30 @@ function renderSites(){
       </a>
       <button onclick="removeSite(${i})" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-indigo1/15 text-ink/40 text-[10px] opacity-0 group-hover:opacity-100 hover:text-red-500 transition" title="削除">✕</button>
     </div>`).join('');
+  renderSiteManage();
+}
+function renderSiteManage(){
+  const box = el('siteManageList'); if(!box) return;
+  box.innerHTML = sites.map((s,i)=>`
+    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-cream border border-indigo1/8">
+      <span class="text-lg shrink-0">${s.icon}</span>
+      <div class="flex-1 min-w-0"><p class="text-sm text-ink/80 truncate">${s.name}</p><p class="text-[11px] text-ink/40 truncate">${s.url}</p></div>
+      <button onclick="removeSite(${i})" class="shrink-0 text-[11px] text-ink/45 hover:text-red-500 transition">削除</button>
+    </div>`).join('') || '<p class="text-xs text-ink/40">まだ登録がありません。</p>';
 }
 function addSite(){
-  const name = el('siteName').value.trim();
-  let url = el('siteUrl').value.trim();
+  const name = el('siteNameSet').value.trim();
+  let url = el('siteUrlSet').value.trim();
   if(!name || !url){ toast('サイト名とURLを入力してください'); return; }
   if(!/^https?:\/\//.test(url)) url = 'https://' + url;
   sites.push({ name, url, icon:'🔗' });
-  el('siteName').value=''; el('siteUrl').value='';
+  saveSites();
+  el('siteNameSet').value=''; el('siteUrlSet').value='';
   renderSites();
   toast('サイトを登録しました 🔗');
 }
-function removeSite(i){ sites.splice(i,1); renderSites(); }
+function removeSite(i){ sites.splice(i,1); saveSites(); renderSites(); }
+function saveSites(){ try{ localStorage.setItem('hisyo_sites', JSON.stringify(sites)); }catch(e){} }
 
 /* ---------- 予定調整 ---------- */
 let coordSeq = 10;
@@ -1192,12 +1256,58 @@ function coordToTask(id){
 function addCoord(){
   const title = el('coordTitle').value.trim();
   if(!title){ toast('調整したい予定を入力してください'); return; }
-  coords.push({ id:'c'+(coordSeq++), title, wth:'', slots:['候補日① 未定','候補日② 未定','候補日③ 未定'], confirmed:null });
+  const slots = (coordTemplates && coordTemplates.length)
+    ? coordTemplates.slice()
+    : ['候補日① 未定','候補日② 未定','候補日③ 未定'];
+  coords.push({ id:'c'+(coordSeq++), title, wth:'', slots, confirmed:null });
   el('coordTitle').value='';
   renderCoords();
   toast('予定調整を追加しました');
 }
 function removeCoord(id){ coords = coords.filter(c=>c.id!==id); renderCoords(); }
+
+/* ---------- 予定調整の定型候補（設定） ---------- */
+let coordTemplates = ['火 14:00','水 10:00','木 15:00'];
+function saveCoordTemplates(){ try{ localStorage.setItem('hisyo_coordTemplates', JSON.stringify(coordTemplates)); }catch(e){} }
+function renderCoordTemplates(){
+  const box = el('coordTplList'); if(!box) return;
+  box.innerHTML = coordTemplates.map((t,i)=> ruleChip(t, `removeCoordTemplate(${i})`)).join('');
+  el('coordTplEmpty').classList.toggle('hidden', coordTemplates.length>0);
+}
+function addCoordTemplate(){
+  const inp = el('coordTplInput'); const v = inp.value.trim();
+  if(!v){ inp.focus(); return; }
+  if(!coordTemplates.includes(v)) coordTemplates.push(v);
+  saveCoordTemplates();
+  inp.value=''; inp.focus();
+  renderCoordTemplates();
+  toast('候補時間帯を追加しました 📅');
+}
+function removeCoordTemplate(i){ coordTemplates.splice(i,1); saveCoordTemplates(); renderCoordTemplates(); toast('候補時間帯を削除しました'); }
+
+/* ---------- 体調・気分の初期値／通知（設定） ---------- */
+let defaultMood = 'normal';
+let toastEnabled = true;
+function saveMisc(){ try{ localStorage.setItem('hisyo_defaultMood', defaultMood); localStorage.setItem('hisyo_toastEnabled', JSON.stringify(toastEnabled)); }catch(e){} }
+function renderMoodSettings(){
+  document.querySelectorAll('.dmood-btn').forEach(b=>{
+    const active = b.dataset.dmood===defaultMood;
+    b.classList.toggle('dmood-active', active);
+    b.classList.toggle('bg-white', !active);
+  });
+}
+function setDefaultMood(k){ defaultMood = k; saveMisc(); renderMoodSettings(); setMood(k); toast('初期の体調・気分を保存しました'); }
+function renderToastToggle(){
+  const b = el('toastToggle'); if(!b) return;
+  b.textContent = toastEnabled ? 'オン' : 'オフ';
+  b.classList.toggle('bg-indigo1', toastEnabled);
+  b.classList.toggle('text-cream', toastEnabled);
+  b.classList.toggle('bg-cream', !toastEnabled);
+  b.classList.toggle('text-ink/50', !toastEnabled);
+  b.classList.toggle('border', !toastEnabled);
+  b.classList.toggle('border-indigo1/15', !toastEnabled);
+}
+function toggleToast(){ toastEnabled = !toastEnabled; saveMisc(); renderToastToggle(); }
 
 /* ---------- タブ ---------- */
 const TABS = ['today','backlog','fax','minutes','docs','bid','settings'];
@@ -1364,6 +1474,7 @@ function tick(){
 /* ---------- トースト ---------- */
 let toastTimer;
 function toast(msg){
+  if(typeof toastEnabled!=='undefined' && !toastEnabled) return;
   const t = el('toast');
   t.textContent = msg;
   t.classList.remove('translate-y-20','opacity-0');
@@ -1373,7 +1484,10 @@ function toast(msg){
 
 /* ---------- 初期化 ---------- */
 loadRules(); applyAutoDelete();
+mood = defaultMood;
 renderTasks(); renderNotifs(); renderBacklog(); renderMail(); renderSites(); renderCoords(); renderFax(); renderBidSites(); renderSettings();
+renderMoodSettings(); renderToastToggle(); renderCoordTemplates();
+document.querySelectorAll('.mood-btn').forEach(b=>{ const a=b.dataset.mood===mood; b.classList.toggle('mood-active',a); b.classList.toggle('bg-white',!a); });
 tick(); setInterval(tick, 30000);
 
 /* ---------- Googleログイン認証 ---------- */
